@@ -1,0 +1,106 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+
+model CardConcept {
+  id              String   @id @default(cuid())
+  type            String
+  displayName     String
+  nameNorm        String
+  signature       String   @unique
+  rulesText       String?
+  baseAttributes  Json?
+  createdAt       DateTime @default(now())
+
+  versions        CardVersion[]
+}
+
+model CardVersion {
+  id                     String   @id @default(cuid())
+  conceptId              String
+  editionId              String
+  treatmentPrefix        String
+  treatmentName          String
+  weaponType             String?
+  rarity                 String
+  scarcityKind           String
+  capValue               Int?
+  serializationRequired  Boolean  @default(false)
+  isClaimable            Boolean  @default(false)
+  metadata               Json?
+  createdAt              DateTime @default(now())
+
+  concept                CardConcept @relation(fields: [conceptId], references: [id])
+  instances              CardInstance[]
+}
+
+model CardInstance {
+  id            String   @id @default(cuid())
+  versionId     String
+  serialLabel   String?
+  serialNumber  Int?
+  serialTotal   Int?
+  authVariant   String?
+  claimStatus   String
+  createdAt     DateTime @default(now())
+
+  version       CardVersion @relation(fields: [versionId], references: [id])
+  ownerships    Ownership[]
+  locks         Lock[]
+}
+
+model Ownership {
+  id            String   @id @default(cuid())
+  instanceId    String
+  ownerUserId  String
+  fromUserId   String?
+  acquiredVia  String
+  active       Boolean  @default(true)
+  timestamp    DateTime @default(now())
+
+  instance     CardInstance @relation(fields: [instanceId], references: [id])
+}
+
+model Lock {
+  id          String   @id @default(cuid())
+  instanceId String
+  lockType    String
+  scope       String
+  expiresAt  DateTime?
+  createdBy  String
+  createdAt  DateTime @default(now())
+
+  instance   CardInstance @relation(fields: [instanceId], references: [id])
+}
+
+model Listing {
+  id            String   @id @default(cuid())
+  instanceId    String
+  sellerUserId String
+  price         Float
+  status        String
+  createdAt    DateTime @default(now())
+}
+
+model Trade {
+  id          String   @id @default(cuid())
+  status      String
+  createdAt  DateTime @default(now())
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  actorUserId String
+  entityType  String
+  entityId    String
+  action      String
+  beforeState Json?
+  afterState  Json?
+  reason      String?
+  timestamp   DateTime @default(now())
+}
