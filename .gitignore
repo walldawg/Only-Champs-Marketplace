@@ -3,3 +3,9 @@ node_modules
 .env
 
 /src/generated/prisma
+
+# macOS
+.DS_Store
+
+# macOS
+.DS_Store
