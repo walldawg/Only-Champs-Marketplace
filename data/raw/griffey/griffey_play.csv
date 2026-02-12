@@ -1,0 +1,126 @@
+Card #,Hero,Variation,Treatment,Weapon,Notation,Power,Athlete Inspiration,Play Cost,Play Ability
+PL-1,Grilled Bandit,First Edition,Plays,,,0,,5,For the rest of the game  if your opponent would recover Hot Dogs  you recover them instead.
+PL-2,The Closer,First Edition,Plays,,,0,,4,If this is used in Battle 7  your Hero gets +40. If it's used in any other Battle  your Hero gets +25.
+PL-3,Banked Power,First Edition,Plays,,,0,,2,After paying the Hot Dog cost of this Play  your Hero gets +5 for every Hot Dog you have left.
+PL-4,Hero Reset,First Edition,Plays,,,0,,2,Your Hero's Power returns to its starting Power.
+PL-5,One And Done,First Edition,Plays,,,0,,1,This must be the only Play you use this Battle. Your Hero gets +20.
+PL-6,Too Full To Fight,First Edition,Plays,,,0,,3,If your opponent has 5 or more Hot Dogs  their Hero gets -15 and they lose 2 Hot Dogs.
+PL-7,Lineup Pressure,First Edition,Plays,,,0,,2,Your opponent's Hero gets -5 for each Hero you've revealed so far.
+PL-8,Sacrifice And Scheme,First Edition,Plays,,,0,,1,Draw 2 Plays and Discard 2 Heroes.
+PL-9,Momentum Breaker,First Edition,Plays,,,0,,1,Your opponent's Hero gets -5 and they Discard 1 random Play.
+PL-10,Drain And Deny,First Edition,Plays,,,0,,3,Your opponent's Hero gets -10 and they can't Recover Hot Dogs next Battle.
+PL-11,Free Booster,First Edition,Plays,,,0,,3,Your Hero gets +20. If you didn't run any Plays last Battle  this Play costs 0. This Play can't be used in Battle 1.
+PL-12,Momentum Meal,First Edition,Plays,,,0,,0,If you win this Battle  Recover Hot Dogs equal to the number of Plays you used this Battle which cost 2 or more. (Max 3).
+PL-13,Hero Tax,First Edition,Plays,,,0,,4,Your opponent must pay 1 Hot Dog for each Hero in their hand. If they can't  they must Discard a random Hero instead.
+PL-14,Sack Streak,First Edition,Plays,,,0,,3,Roll a dice once. If you roll a 4-6  your opponent's Hero gets -15. You may roll again until you roll a 1-3.
+PL-15,Running On Fumes,First Edition,Plays,,,0,,0,If you have 1 or 0 Hot Dogs left  your Hero gets +15.
+PL-16,Rich Get Richer,First Edition,Plays,,,0,,0,If you have 6 or more Hot Dogs left  Recover 1 Hot Dog and Draw 1 Play.
+PL-17,Overcommited,First Edition,Plays,,,0,,2,Next Battle  your opponent's Hero gets -5 for every Play they run.
+PL-18,Belly Buster,First Edition,Plays,,,0,,1,If your opponent has an equal or greater number of Hot Dogs than you before paying this Play's Hot Dog cost  their Hero gets -10.
+PL-19,Emergency Shutdown,First Edition,Plays,,,0,,0,If you have 2 or fewer Hot Dogs  cancel all Plays affecting the rest of the game.
+PL-20,Double-Edged Flip,First Edition,Plays,,,0,,2,Flip a coin. If heads  your opponent's Hero gets -15. If tails  your opponent's next Hero gets -15.
+PL-21,Overextended,First Edition,Plays,,,0,,2,Your opponent's Hero gets -10. If your opponent has used 2 or more Plays this Battle  they also lose 1 Hot Dog.
+PL-22,Battle Back,First Edition,Plays,,,0,,2,Your Hero gets +15. If your opponent has won more Battles than you  Draw 1 Play.
+PL-23,Weapon Tangle,First Edition,Plays,,,0,,2,If your opponent's Hero has a different weapon type than yours  your Hero gets +15. If they are the same  your Hero gets +20.
+PL-24,Hexvantage,First Edition,Plays,,,0,,1,Your Hero gets +5 Power. If it has a Hex weapon  it gets +20.
+PL-25,Trade-Up,First Edition,Plays,,,0,,2,Discard a Play from your hand to Draw 2 new Plays.
+PL-26,Baseline Bonus,First Edition,Plays,,,0,,1,If your Hero's current Power is the same as its starting Power  your Hero gets +10.
+PL-27,Consolation Combo,First Edition,Plays,,,0,,0,If your Hero loses this Battle  Draw 1 Play and Recover 1 Hot Dog.
+PL-28,Quick Draw,First Edition,Plays,,,0,,1,If you run this Play before Battle 3  Draw 2 Plays. If not  Draw 1 Play.
+PL-29,Weapon-Sync,First Edition,Plays,,,0,,2,If your previous Hero and your current Hero share a weapon type  your Hero gets +20. Otherwise  Draw 1 Play.
+PL-30,Synergy Snacks,First Edition,Plays,,,0,,0,If your previous 2 revealed Heroes shared a weapon type  Recover 2 Hot Dogs.
+PL-31,Wildcard Wager,First Edition,Plays,,,0,,0,Draw 1 Play. If it costs 1 or less  you may play it immediately for free. If the cost is 2 or higher  Discard it.
+PL-32,Big Time Recruit,First Edition,Plays,,,0,,1,Reveal the top 3 Heroes of your Hero Deck. Choose one to add to your hand  then shuffle the rest back into your Hero Deck.
+PL-33,Comeback Time,First Edition,Plays,,,0,,1,If you lost the 2 previous Battles  your Hero gets +15.
+PL-34,Dice Duel,First Edition,Plays,,,0,,0,Both Players roll a dice. Whoever rolls a higher number gets +25. If tied  both get -10.
+PL-35,High Stakes Pump-Up,First Edition,Plays,,,0,,0,Your Hero gets +10. If you lose this Battle  your Hero in the next Battle gets -20.
+PL-36,Pick Your Poison,First Edition,Plays,,,0,,0,If you lost the previous Battle  your opponent must pay 1 Hot Dog at the start of the next Battle or Discard a Play.
+PL-37,Snack Sanction,First Edition,Plays,,,0,,1,For the rest of the game  neither Player can Recover more than 1 Hot Dog per Battle.
+PL-38,Bun Shortage,First Edition,Plays,,,0,,3,For the rest of the game  neither Player can Recover any Hot Dogs.
+PL-39,Burn To Burn,First Edition,Plays,,,0,,1,Discard a Play. If you do  your opponent loses 2 Hot Dogs.
+PL-40,Catch-Up Bonus,First Edition,Plays,,,0,,2,Your Hero gets +10. If your opponent has more Hot Dogs than you after you've paid this Play's cost  Recover 1 Hot Dog.
+PL-41,Buff Or Debuff,First Edition,Plays,,,0,,2,After paying this Play's cost  if your opponent has more Hot Dogs than you  your Hero gets +15. If you have more than them  their Hero gets -15.
+PL-42,Glowaway,First Edition,Plays,,,0,,2,Discard a Hero with a Glow weapon from your hand. Your Hero gets +25.
+PL-43,Playbook Knowledge,First Edition,Plays,,,0,,1,Reveal the top 2 Plays of your opponent's Playbook. Put one back on top and send 1 to the bottom.
+PL-44,Scare Tactics,First Edition,Plays,,,0,,1,If you have Honors  reveal a Play from your hand. You may use it for free next Battle if your opponent uses a Play with equal or greater cost.
+PL-45,Weapon Lineage,First Edition,Plays,,,0,,1,Your current Hero gets +10 for every Hero in your Discard Pile with the same weapon type.
+PL-46,Delayed Recovery,First Edition,Plays,,,0,,1,Choose one of your unrevealed Heroes. When that Hero is revealed  it gets -10 but you Recover 2 Hot Dogs.
+PL-47,Second Wind,First Edition,Plays,,,0,,3,Shuffle your entire Discard Pile (excluding Hot Dogs) back into your deck. Draw 2 Plays.
+PL-48,Protein Bar,First Edition,Plays,,,0,,2,Your Hero gets +15. If you lose this Battle  Recover 1 Hot Dog.
+PL-49,Different Leagues,First Edition,Plays,,,0,,1,If your Hero's weapon type is different from your opponent's  their Hero gets -10.
+PL-50,Refill And Reload,First Edition,Plays,,,0,,1,Shuffle 1 of your Plays from a previous Round into your Playbook to Draw 1 Play.
+PL-51,Dog Gone Flip,First Edition,Plays,,,0,,0,Flip a coin. If heads  you Recover 3 Hot Dogs. If tails  your opponent Recovers 3 Hot Dogs.
+PL-52,Combo Kick,First Edition,Plays,,,0,,2,Your Hero gets +15. If this is your second Play this Battle  it gets an additional +5.
+PL-53,Overprepared,First Edition,Plays,,,0,,3,Your opponent's Hero gets -5 for every Play you have run this Battle.
+PL-54,More Plays  Less Power,First Edition,Plays,,,0,,1,Once this Play is run  if your opponent has more Plays in their hand than you  their Hero gets -10.
+PL-55,Lucky Discard,First Edition,Plays,,,0,,2,Discard the top card of your Hero Deck. If it has the same weapon type as your active Hero  your Hero gets +20.
+PL-56,Power Pick,First Edition,Plays,,,0,,2,Reveal the top 3 Plays of your Playbook. Add 1 to your hand and Discard the rest. If it's a Play with a cost of 3 or higher  your Hero gets +10.
+PL-57,Toss And Trade,First Edition,Plays,,,0,,2,Flip a coin. If heads  send your current Hero to the Discard Pile and replace it with one from your hand. If tails  Discard 1 Play from your hand.
+PL-58,Lucky Shot,First Edition,Plays,,,0,,1,Flip a coin and roll a dice. If the coin lands on heads and you roll a 4-6 on the dice  your Hero gets +30. If not  Discard 2 Plays from your hand.
+PL-59,Bench Blocker,First Edition,Plays,,,0,,3,Your opponent's Hero gets -20. They can't Substitute next Battle.
+PL-60,Fallen Fighters,First Edition,Plays,,,0,,1,Discard 1 Hero from your hand. Your current Hero gets +10 for every Hero in your Discard Pile with the same weapon type as the one you discarded.
+PL-61,Dead Red,First Edition,Plays,,,0,,3,Name a weapon type. Now and for the rest of the game  if your opponent's Hero has that weapon type  they get -10. Otherwise  you Discard 1 Play.
+PL-62,Play Surge,First Edition,Plays,,,0,,1,If your opponent uses 3 or more Plays this Battle  your Hero gets +15.
+PL-63,First Draw,First Edition,Plays,,,0,,0,If this is the first play you've run this Battle  Draw 1 Play.
+PL-64,Play Re-Order,First Edition,Plays,,,0,,1,Look at the top 3 Plays of your Playbook. Place them back on top in any order you want.
+PL-65,Discard Or 10,First Edition,Plays,,,0,,0,Flip a coin. If heads  your Hero gets +10. If tails  you must Discard a random Play from your hand.
+PL-66,Maximum Effort,First Edition,Plays,,,0,,0,Your Hero gets +10 this Battle  but you can't use any Plays next Battle.
+PL-67,3-Dog-Special,First Edition,Plays,,,0,,0,If you have exactly 3 Hot Dogs left  your Hero gets +10.
+PL-68,Substitution Boost,First Edition,Plays,,,0,,0,For the rest of the game  any Hero that has been Substituted in gets +5.
+PL-69,Bench Scout,First Edition,Plays,,,0,,1,Reveal the top 4 Heroes of your Hero Deck. Add 1 to your hand. Shuffle the rest into your Hero Deck.
+PL-70,Good Guess,First Edition,Plays,,,0,,1,Name a weapon type. If your opponent's next Hero has that weapon type  that Hero gets -15.
+PL-71,Good Fortune,First Edition,Plays,,,0,,1,If you won the last Battle  your Hero gets +10. If you lost  Draw 1 Play.
+PL-72,10 For A Sub,First Edition,Plays,,,0,,1,If you Substituted this Battle  your Hero gets +10.
+PL-73,Cheap Trick,First Edition,Plays,,,0,,2,Reveal the top card of your Playbook. If it costs 2 or less  Draw it and your Hero gets +10. If not  shuffle it back into your Playbook.
+PL-74,Weapon Mixer,First Edition,Plays,,,0,,2,Your Hero gets +5 for every different weapon type revealed this game.
+PL-75,Streaky,First Edition,Plays,,,0,,0,If you've won 2 Battles in a row  your opponent's current Hero gets -10.
+PL-76,Frostbiter,2026 Edition,Plays,,,0,,1,Discard 1 Hero with an Ice weapon from your hand. Your opponent's Hero gets -15 this Battle.
+PL-77,Scrap Metal,2026 Edition,Plays,,,0,,0,Discard 1 Hero with a Steel weapon from your hand. Your opponent's Hero gets -10 this Battle.
+PL-78,Burnout,2026 Edition,Plays,,,0,,1,Discard 1 Hero with a Fire weapon from your hand. Your opponent's Hero gets -15 this Battle.
+PL-79,Don't Call It A Comeback,2026 Edition,Plays,,,0,,1,Replace this Hero with any Hero from your Discard Pile.
+PL-80,Late-Game Magic,2026 Edition,Plays,,,0,,2,You can only run this Play in Battle 5 or later; give your Hero +20.
+PL-81,Forced Retreat,2026 Edition,Plays,,,0,,2,Your opponent must Discard their current Hero  and replace it with one from their hand.
+PL-82,Loan Sharked,2026 Edition,Plays,,,0,,2,For the rest of the Game if a coin is flipped  lower the opponent's Hero in the active Battle by -5.
+PL-83,Late Hit,2026 Edition,Plays,,,0,,3,This must be used in Battle 7  your opponent's Hero gets -35.
+PL-84,Shooters Shoot,2026 Edition,Plays,,,0,,2,Flip a coin 4 times; your opponent's Hero gets -5 each time the coin lands on tails.
+PL-85,Burning Fever,2026 Edition,Plays,,,0,,2,If your Hero has a Fire weapon  it can't drop below its current Power.
+PL-86,Frozen Resolve,2026 Edition,Plays,,,0,,2,If your Hero has an Ice weapon  it can't drop below its current Power.
+PL-87,Gavel of Justice,2026 Edition,Plays,,,0,,4,Lower the opponent's Hero by -30.
+PL-88,Chrome Will,2026 Edition,Plays,,,0,,1,If your Hero has a Steel weapon  it can't drop below its current Power.
+PL-89,Crystal Ball,2026 Edition,Plays,,,0,,0,Pick a number 1-6  then your opponent picks a different number 1-6; roll a die; if it lands on either player's number their Hero gets +30.
+PL-90,Prevent D,2026 Edition,Plays,,,0,,3,Your opponent can't run any Plays in Battle 7.
+PL-91,Heads-Up!,2026 Edition,Plays,,,0,,2,Flip a coin 4 times; your Hero gets +5 each time the coin lands on heads.
+PL-92,Jump Ball,2026 Edition,Plays,,,0,,0,Flip a coin; if heads  your Hero gets +10  if tails  your Hero gets -10.
+PL-93,Lucky 7,2026 Edition,Plays,,,0,,0,Roll a die two times; if the numbers add up to 7 your Hero gets +100; if any other number you must Discard a random Hero from your hand.
+PL-94,Cursed Coin,2026 Edition,Plays,,,0,,2,Flip a coin 3 times; opponent's Hero gets -10 each time the coin lands on heads.
+PL-95,Robin Who,2026 Edition,Plays,,,0,,1,Steal -5 from your opponent's Hero and give +5 to your own Hero.
+PL-96,Roster Cuts,2026 Edition,Plays,,,0,,3,Discard the top 3 Heroes of your Hero Deck.
+PL-97,Worth The Risk?,2026 Edition,Plays,,,0,,1,Roll a dice: if you get a 1 or 6  your Hero's power drops to 0. If you roll a 2-5  you gain +25.
+PL-98,Discard Rebate,2026 Edition,Plays,,,0,,0,Shuffle a Hero from your Discard Pile back into your Hero Deck.
+PL-99,Opps' Choice,2026 Edition,Plays,,,0,,1,Send your Hero to the Discard Pile. Reveal the top 2 Heroes from your deck. Your opponent picks 1 to join the battle  and the other goes to your Discard Pile.
+PL-100,Even Money,2026 Edition,Plays,,,0,,0,Flip a coin. If heads  your Hero gets +20. If tails  opponent's Hero gets +20.
+BPL-1,Hot Dog Thief,First Edition,Bonus Plays,,,0,,0,Your opponent loses 1 Hot Dog. You gain 1 Hot Dog.
+BPL-2,Drought,First Edition,Bonus Plays,,,0,,2,Your opponent loses 2 Hot Dogs and can't Recover any Hot Dogs this Battle or next Battle.
+BPL-3,Bonus Recovery,First Edition,Bonus Plays,,,0,,0,For the rest of the game  whenever a Player Recovers any Hot Dogs  they Recover an extra Hot Dog. (Ex. If you would Recover 3 Hot Dogs  you get 4.)
+BPL-4,Called Shot,First Edition,Bonus Plays,,,0,,3,Declare the name of 1 Play. If your opponent has a Play in their hand with that name  they must Discard it.
+BPL-5,Plays Or Dogs?,First Edition,Bonus Plays,,,0,,1,Choose one of these options: Draw 2 Plays or Discard 2 Plays and Recover 3 Hot Dogs.
+BPL-6,Win or Weiners,First Edition,Bonus Plays,,,0,,1,If you lose this Battle  Recover 2 Hot Dogs. If you win  Draw a Play.
+BPL-7,Competitive Disadvantage,First Edition,Bonus Plays,,,0,,2,Your opponent's current Hero gets -10 for every Battle they've won.
+BPL-8,Lose And Discard,First Edition,Bonus Plays,,,0,,3,For the rest of the game  whenever a Player loses a Battle  they must also Discard a Hot Dog.
+BPL-9,Rotten Dogs,First Edition,Bonus Plays,,,0,,2,At the start of the next Battle  your opponent loses 2 Hot Dogs.
+BPL-10,Dumpster Battle,First Edition,Bonus Plays,,,0,,4,If possible  both Players replace their Hero in the active Battle with a Hero from their Discard Pile.
+BPL-11,Head Start,First Edition,Bonus Plays,,,0,,3,Both Heroes in this Battle return to their starting Power  then your Hero gets +10.
+BPL-12,Fair Trade,First Edition,Bonus Plays,,,0,,1,Your opponent Recovers 1 Hot Dog. Draw 2 Plays.
+BPL-13,Storm The Field,First Edition,Bonus Plays,,,0,,2,Discard all Heroes and Plays from your hand. Your Hero gets +5 for every card discarded this way.
+BPL-14,Sub And Power-Up,First Edition,Bonus Plays,,,0,,3,Swap your current Hero with one from your hand. Your new Hero gets +10.
+BPL-15,Play Pluck,First Edition,Bonus Plays,,,0,,1,Send 1 random Play from your opponent's hand to their Discard Pile.
+BPL-16,Surging Power,First Edition,Bonus Plays,,,0,,0,This can only be played in Battle 5 or 6. Your Hero gets +20. If you lose this battle  Discard 2 Plays from your hand.
+BPL-17,Honorable,First Edition,Bonus Plays,,,0,,1,You get Honors next turn. Draw a Play.
+BPL-18,A Game Of War,First Edition,Bonus Plays,,,0,,0,Both Players reveal the top card of their Hero Deck. Whichever Player reveals a Hero with higher Power Draws 1 Play. Both Players Discard their revealed Heroes.
+BPL-19,Big Spender Bonus,First Edition,Bonus Plays,,,0,,2,Discard the top 5 Plays of your Playbook. Your Hero gets +10 for any of those Plays with a cost of 3 or more.
+BPL-20,Super Draw,First Edition,Bonus Plays,,,0,,0,If your Hero has a Super weapon  Draw 2 Plays.
+BPL-21,Hex Draw,First Edition,Bonus Plays,,,0,,1,If your Hero has a Hex weapon  Draw 2 Plays.
+BPL-22,Gum Draw,First Edition,Bonus Plays,,,0,,1,If your Hero has a Gum weapon  Draw 2 Plays.
+BPL-23,Clean Slate,First Edition,Bonus Plays,,,0,,1,Both Players Discard all the Plays in their hands and Draw 3 new Plays.
+BPL-24,Bull Market,First Edition,Bonus Plays,,,0,,2,Flip a coin. If heads  your opponent's Plays cost 1 extra Hot Dog this Battle and next Battle.
+BPL-25,Transparency Clause,First Edition,Bonus Plays,,,0,,2,Choose up to 2 Plays in your opponent's hand. Your opponent reveals them.
