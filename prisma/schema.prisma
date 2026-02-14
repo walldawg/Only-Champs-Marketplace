@@ -152,6 +152,8 @@ model CardVersion {
 
   versionCode String
   finish      Finish? @default(NONFOIL)
+  artVerifiedKey String?
+  artOfficialKey String?
   treatmentKey String?
 
 
@@ -1125,4 +1127,34 @@ model SponsorPoolLedger {
   parentId   String?
 
   pool       SponsorPool @relation(fields: [poolId], references: [id])
+}
+// ============================================================================
+// LFBO Phase 8B (Rule Encoding Readiness) — RESTORED
+// Adds RuleSet + ModeRuleBinding to persist versioned mode rules as data.
+// Required by Phase 8B/8C/8D routes and engine readiness.
+// ============================================================================
+
+enum RuleSetStatus {
+  DRAFT
+  ACTIVE
+  RETIRED
+}
+
+model RuleSet {
+  id        String        @id @default(cuid())
+  key       String
+  version   Int
+  status    RuleSetStatus
+  rulesJson Json
+  createdAt DateTime      @default(now())
+
+  @@unique([key, version])
+}
+
+model ModeRuleBinding {
+  id             String   @id @default(cuid())
+  modeKey        String   @unique
+  ruleSetKey     String
+  ruleSetVersion Int
+  createdAt      DateTime @default(now())
 }
