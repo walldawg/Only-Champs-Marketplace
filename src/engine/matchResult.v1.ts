@@ -1,7 +1,9 @@
 // src/engine/matchResult.v1.ts
-// Match Result Record builder (post-COMPLETE) — now uses deterministic battle outcome.
+// Match Result Record builder (post-COMPLETE) — uses deterministic battle outcome.
+// Milestone B (B1): include contract-compliant timeline (MatchTimelineEventV1[]).
 
 import { SessionV1 } from "./session.v1";
+import type { MatchTimelineEventV1 } from "../contracts/gameplay/v1/MatchArtifactV1";
 
 export type WinReasonV1 = "DETERMINISTIC_HASH_V1";
 
@@ -16,6 +18,9 @@ export type MatchResultRecordV1 = {
   gameModeVersion: number;
 
   engineCompatVersion: number;
+
+  // Milestone B1: standardized timeline events emitted by the engine runner.
+  timeline: MatchTimelineEventV1[];
 
   result: {
     winner: "HOME" | "AWAY" | "DRAW";
@@ -49,6 +54,8 @@ export function buildMatchResultRecordV1(args: {
     gameModeVersion: snaps.gameModeSnapshot.gameModeVersion,
 
     engineCompatVersion: snaps.formatSnapshot.engineCompatVersion,
+
+    timeline: args.session.timeline.slice(),
 
     result: {
       winner: outcome.winner,

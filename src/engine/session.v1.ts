@@ -1,8 +1,11 @@
 // src/engine/session.v1.ts
 // Setup boundary snapshot + immutability + deterministic battle outcome storage.
+// Milestone B (B1): Contract-compliant timeline emission (deterministic timestamps).
 
 import type { AppConfig, FormatRegistry, GameModeRegistry } from "../config/registryLoaders.v1";
 import { validateSessionCanEnterSetup, type SessionPointer } from "../config/sessionGate.v1";
+
+import type { MatchTimelineEventV1, JSONObject } from "../contracts/gameplay/v1/MatchArtifactV1";
 
 export type SessionPhase = "CREATED" | "SETUP" | "BATTLE_LOOP" | "COMPLETE";
 
@@ -28,6 +31,9 @@ export class SessionV1 {
 
   private _battleOutcome: BattleOutcomeV1 | null = null;
 
+  // Milestone B1: timeline is accumulated by the runner in deterministic order.
+  private _timeline: MatchTimelineEventV1[] = [];
+
   constructor(args: { sessionId: string; pointer: SessionPointer }) {
     this.sessionId = args.sessionId;
     this._pointer = {
@@ -50,6 +56,10 @@ export class SessionV1 {
 
   get battleOutcome(): Readonly<BattleOutcomeV1> | null {
     return this._battleOutcome;
+  }
+
+  get timeline(): ReadonlyArray<MatchTimelineEventV1> {
+    return this._timeline;
   }
 
   setFormatPointer(next: SessionPointer["format"]) {
@@ -86,6 +96,27 @@ export class SessionV1 {
     this._snapshots = snapshots;
     this._locked = true;
     this._phase = "SETUP";
+  }
+
+  // Milestone B1: runner-only helper to append standardized timeline events.
+  // This is intentionally dumb: idx is assigned by current length, and ordering is the runner's job.
+  appendTimelineEvent(args: {
+    code: string;
+    at: string; // ISO-8601 (deterministic)
+    participantId?: string;
+    metrics?: Record<string, number>;
+    extra?: JSONObject;
+  }) {
+    const e: MatchTimelineEventV1 = {
+      idx: this._timeline.length,
+      code: args.code,
+      at: args.at,
+      participantId: args.participantId,
+      metrics: args.metrics,
+      extra: args.extra,
+    };
+    deepFreeze(e);
+    this._timeline.push(e);
   }
 
   enterBattleLoop() {
