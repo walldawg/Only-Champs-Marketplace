@@ -1,0 +1,13 @@
+{
+  "activeFormatDistribution": {
+    "distributionId": "DIST_FORMAT_EXAMPLE",
+    "distributionVersion": 1
+  },
+  "activeGameModeRegistry": {
+    "gameModeRegistryId": "GM_REG_EXAMPLE",
+    "gameModeRegistryVersion": 1
+  },
+  "engineSupportedCompatVersions": [
+    1
+  ]
+}

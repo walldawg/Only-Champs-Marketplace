@@ -1,0 +1,13 @@
+{
+  "formatRegistryId": "FMT_REG_EXAMPLE_ALT",
+  "formatRegistryVersion": 1,
+  "formats": [
+    {
+      "formatId": "FMT_ROOKIE_FAST4",
+      "formatVersion": 1,
+      "engineCompatVersion": 1,
+      "name": "Rookie (Fast-4)",
+      "description": "Example alternate format variant (still deterministic)."
+    }
+  ]
+}

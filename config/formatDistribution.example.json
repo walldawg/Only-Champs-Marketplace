@@ -1,0 +1,16 @@
+{
+  "distributionId": "DIST_FORMAT_EXAMPLE",
+  "distributionVersion": 1,
+  "registries": [
+    {
+      "formatRegistryId": "FMT_REG_EXAMPLE_CORE",
+      "formatRegistryVersion": 1,
+      "isDefault": true
+    },
+    {
+      "formatRegistryId": "FMT_REG_EXAMPLE_ALT",
+      "formatRegistryVersion": 1,
+      "isDefault": false
+    }
+  ]
+}

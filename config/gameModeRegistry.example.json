@@ -1,0 +1,70 @@
+{
+  "gameModeRegistryId": "GM_REG_EXAMPLE",
+  "gameModeRegistryVersion": 1,
+  "gameModes": [
+    {
+      "gameModeId": "GM_ROOKIE",
+      "gameModeVersion": 1,
+      "engineCompatVersion": 1,
+      "name": "Rookie",
+      "description": "Mirrored, no tricks. No subs, no plays, no status effects.",
+      "formatGate": {
+        "mode": "ALLOW_LIST",
+        "allowedFormats": [
+          {
+            "formatId": "FMT_ROOKIE",
+            "formatVersion": 1
+          }
+        ]
+      }
+    },
+    {
+      "gameModeId": "GM_SUBSTITUTION",
+      "gameModeVersion": 1,
+      "engineCompatVersion": 1,
+      "name": "Substitution",
+      "description": "Mirrored, pre-reveal paid swap window only.",
+      "formatGate": {
+        "mode": "ALLOW_LIST",
+        "allowedFormats": [
+          {
+            "formatId": "FMT_SUBSTITUTION",
+            "formatVersion": 1
+          }
+        ]
+      }
+    },
+    {
+      "gameModeId": "GM_PLAYMAKER",
+      "gameModeVersion": 1,
+      "engineCompatVersion": 1,
+      "name": "Playmaker",
+      "description": "Mirrored, substitution + post-reveal play windows + status layer.",
+      "formatGate": {
+        "mode": "ALLOW_LIST",
+        "allowedFormats": [
+          {
+            "formatId": "FMT_PLAYMAKER",
+            "formatVersion": 1
+          }
+        ]
+      }
+    },
+    {
+      "gameModeId": "GM_SCORED",
+      "gameModeVersion": 1,
+      "engineCompatVersion": 1,
+      "name": "Scored",
+      "description": "Baseline gamemode for deterministic engine validation.",
+      "formatGate": {
+        "mode": "ALLOW_LIST",
+        "allowedFormats": [
+          {
+            "formatId": "FMT_ROOKIE",
+            "formatVersion": 1
+          }
+        ]
+      }
+    }
+  ]
+}
