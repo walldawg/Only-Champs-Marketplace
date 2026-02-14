@@ -31,6 +31,9 @@ export async function registerEngineMatchRoutes(app: FastifyInstance, prisma: Pr
   // -------------------------------
   // POST /engine/matches/run
   // -------------------------------
+  // Optional identity fields:
+  // - homeCompetitorId, awayCompetitorId (strings)
+  // These enable ranked standings + placement payouts in downstream tournament derivation.
   app.post("/engine/matches/run", async (req: any, reply) => {
     try {
       const body = req.body ?? {};
@@ -57,8 +60,21 @@ export async function registerEngineMatchRoutes(app: FastifyInstance, prisma: Pr
         gameModeRegistry,
       });
 
-      // Postgame bundle (certified)
-      const bundle = buildPostGameBundleV1({ matchResult });
+      // Attach identity if provided (keeps engine certified; identity is metadata only)
+      const homeCompetitorId =
+        typeof body.homeCompetitorId === "string" && body.homeCompetitorId.trim()
+          ? body.homeCompetitorId.trim()
+          : null;
+
+      const awayCompetitorId =
+        typeof body.awayCompetitorId === "string" && body.awayCompetitorId.trim()
+          ? body.awayCompetitorId.trim()
+          : null;
+
+      const matchResultWithIdentity = { ...matchResult, homeCompetitorId, awayCompetitorId } as any;
+
+      // Postgame bundle (certified + metadata passthrough)
+      const bundle = buildPostGameBundleV1({ matchResult: matchResultWithIdentity });
 
       // Persist (Milestone C2 model)
       const row = await prisma.engineMatchArtifactV1.create({
@@ -85,7 +101,7 @@ export async function registerEngineMatchRoutes(app: FastifyInstance, prisma: Pr
               engineCompatVersion: matchResult.engineCompatVersion,
             },
           } as any,
-          matchResultJson: matchResult as any,
+          matchResultJson: matchResultWithIdentity as any,
           insightRecordJson: bundle.insightRecord as any,
         },
       });
