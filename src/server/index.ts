@@ -4,19 +4,28 @@ import { PrismaClient } from "@prisma/client";
 
 import { registerGamesRoutes } from "./games.routes";
 import { registerDecksRoutes } from "./decks.routes";
-import { registerCatalogRoutes } from "./catalog.routes";
+import * as catalog from "./catalog.routes";
 import { registerMarketplaceRoutes } from "./marketplace/marketplace.routes";
 import { registerEngineMatchRoutes } from "./engineMatch.routes.v1";
 import { registerTournamentRoutesV1 } from "./tournaments.routes.v1";
 import { registerSponsorPoolRoutesV1 } from "./sponsorPools.routes.v1";
 import { registerBoBucksRoutesV1 } from "./bobucks.routes.v1";
 
-import { ruleSetValidationRoutes } from "./ruleSetValidation.routes";
 const app = Fastify({ logger: true });
 const prisma = new PrismaClient();
 
+// Catalog route export compatibility:
+// Some branches export `registerCatalogRoutes`, others export `catalogRoutes`.
+const registerCatalogRoutesFn = () => {
+  const candidate = (catalog as any).registerCatalogRoutes ?? (catalog as any).catalogRoutes;
+  if (typeof candidate !== "function") {
+    throw new Error("Catalog routes module missing export: registerCatalogRoutes or catalogRoutes");
+  }
+  return candidate as (app: any) => Promise<void>;
+};
+
 async function main() {
-  await registerCatalogRoutes(app);
+  await registerCatalogRoutesFn()(app);
   await registerDecksRoutes(app);
 
   // Prisma-owned routes
@@ -38,5 +47,3 @@ main().catch((err) => {
   app.log.error(err);
   process.exit(1);
 });
-
-  app.register(ruleSetValidationRoutes);

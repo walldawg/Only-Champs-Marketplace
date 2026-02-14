@@ -24,20 +24,49 @@ function isCardType(v: unknown): v is CardType {
   return v === "HERO" || v === "PLAY" || v === "HOTDOG";
 }
 
+function asObjectOrEmpty(v: unknown): Record<string, any> {
+  if (v && typeof v === "object" && !Array.isArray(v)) return v as Record<string, any>;
+  return {};
+}
+
+function cardBackForSet(setCode: string): { key: string; setCode: string } {
+  // Convention: BACK_{SETCODE_UPPER}. Keep stable and predictable.
+  return { key: `BACK_${String(setCode).toUpperCase()}`, setCode };
+}
+
+type ArtFront =
+  | { level: "BASE" | "TREATMENT" | "OFFICIAL" | "VERIFIED"; key: string };
+
+function resolveArtFront(v: {
+  artOfficialKey?: string | null;
+  artVerifiedKey?: string | null;
+}): ArtFront {
+  if (v.artOfficialKey) return { level: "OFFICIAL", key: v.artOfficialKey };
+  if (v.artVerifiedKey) return { level: "VERIFIED", key: v.artVerifiedKey };
+  // Phase 8H: CardViewModelV1 freeze requires an artFront object.
+  // Until Base/Treatment art keys exist in the schema, we return a stable placeholder.
+  return { level: "BASE", key: "ART_BASE_PENDING" };
+}
+/**
+ * Catalog browsing routes (Concepts + Versions).
+ *
+ * Exported as registerCatalogRoutes for index.ts compatibility.
+ */
 export async function registerCatalogRoutes(app: FastifyInstance) {
   /**
-   * Gym lobby stats:
-   * /catalog/summary?setCode=griffey
+   * Summary: available sets + counts
+   * GET /catalog/sets
    */
-  app.get("/catalog/summary", async (req) => {
-    const { setCode } = (req.query as { setCode?: string }) ?? {};
+  app.get("/catalog/sets", async (req, reply) => {
+    const q = (req.query as { setCode?: string }) ?? {};
+    const setCode = q.setCode?.trim();
 
     const conceptWhere = setCode ? `WHERE setCode = ?` : "";
     const conceptParams = setCode ? [setCode] : [];
 
     const conceptRows = (await prisma.$queryRawUnsafe(
       `
-      SELECT setCode as setCode, type as type, COUNT(*) as count
+      SELECT setCode, type, COUNT(*) as count
       FROM CardConcept
       ${conceptWhere}
       GROUP BY setCode, type
@@ -63,11 +92,7 @@ export async function registerCatalogRoutes(app: FastifyInstance) {
 
     const sets: Record<
       string,
-      {
-        setCode: string;
-        conceptCounts: Record<string, number>;
-        versionCounts: Record<string, number>;
-      }
+      { setCode: string; conceptCounts: Record<string, number>; versionCounts: Record<string, number> }
     > = {};
 
     for (const r of conceptRows) {
@@ -103,10 +128,7 @@ export async function registerCatalogRoutes(app: FastifyInstance) {
     const offset = Math.max(asInt(q.offset, 0), 0);
     const includeVersions = asBool(q.includeVersions, false);
 
-    const whereConcept = {
-      setCode,
-      ...(type ? { type: type as CardType } : {}),
-    };
+    const whereConcept = { setCode, ...(type ? { type: type as CardType } : {}) };
 
     const [total, concepts] = await Promise.all([
       prisma.cardConcept.count({ where: whereConcept }),
@@ -115,13 +137,7 @@ export async function registerCatalogRoutes(app: FastifyInstance) {
         orderBy: [{ type: "asc" }, { slug: "asc" }],
         skip: offset,
         take: limit,
-        select: {
-          hybridKey: true,
-          setCode: true,
-          type: true,
-          slug: true,
-          name: true,
-        },
+        select: { hybridKey: true, setCode: true, type: true, slug: true, name: true },
       }),
     ]);
 
@@ -134,9 +150,7 @@ export async function registerCatalogRoutes(app: FastifyInstance) {
     });
 
     const versionCountByConceptKey = new Map<string, number>();
-    for (const r of versionCounts) {
-      versionCountByConceptKey.set(r.conceptKey, r._count._all);
-    }
+    for (const r of versionCounts) versionCountByConceptKey.set(r.conceptKey, r._count._all);
 
     let versionsByConceptKey: Map<string, any[]> | undefined;
 
@@ -147,10 +161,16 @@ export async function registerCatalogRoutes(app: FastifyInstance) {
         select: {
           versionKey: true,
           conceptKey: true,
+          // NOTE: keep setCode selected so we can validate + backfill behavior.
+          setCode: true,
           conceptType: true,
           versionCode: true,
           finish: true,
           attributes: true,
+          requirements: true,
+          // Art resolution ladder (fields must exist in schema)
+          artVerifiedKey: true,
+          artOfficialKey: true,
         },
       });
 
@@ -173,30 +193,37 @@ export async function registerCatalogRoutes(app: FastifyInstance) {
       };
 
       if (includeVersions && versionsByConceptKey) {
-        base.versions = versionsByConceptKey.get(c.hybridKey) ?? [];
+        base.versions = (versionsByConceptKey.get(c.hybridKey) ?? []).map((v) => {
+          const sc = (v.setCode ?? c.setCode) as string;
+          return {
+            versionKey: v.versionKey,
+            conceptKey: v.conceptKey,
+            setCode: sc,
+            conceptType: v.conceptType,
+            versionCode: v.versionCode,
+            finish: v.finish,
+            attributes: v.attributes,
+            requirements: asObjectOrEmpty(v.requirements),
+            cardBack: cardBackForSet(sc),
+            artFront: resolveArtFront(v),
+          };
+        });
       }
 
       return base;
     });
 
-    return {
-      setCode,
-      filter: { type: type ?? null },
-      paging: { limit, offset, total },
-      items,
-    };
+    return { setCode, filter: { type: type ?? null }, paging: { limit, offset, total }, items };
   });
 
   /**
    * Single concept drill-down.
    *
    * GET /catalog/concepts/:conceptKey?includeVersions=true&limit=100&offset=0
-   * Example conceptKey: griffey:HERO:NO_003
    */
   app.get("/catalog/concepts/:conceptKey", async (req, reply) => {
     const { conceptKey } = req.params as { conceptKey: string };
-    const q =
-      (req.query as { includeVersions?: string; limit?: string; offset?: string }) ?? {};
+    const q = (req.query as { includeVersions?: string; limit?: string; offset?: string }) ?? {};
 
     const includeVersions = asBool(q.includeVersions, true);
     const limit = Math.min(Math.max(asInt(q.limit, 100), 1), 500);
@@ -204,140 +231,147 @@ export async function registerCatalogRoutes(app: FastifyInstance) {
 
     const concept = await prisma.cardConcept.findUnique({
       where: { hybridKey: conceptKey },
-      select: {
-        hybridKey: true,
-        setCode: true,
-        type: true,
-        slug: true,
-        name: true,
-        meta: true,
-      },
+      select: { hybridKey: true, setCode: true, type: true, slug: true, name: true, meta: true },
     });
 
-    if (!concept) {
-      return reply.code(404).send({ error: `Concept not found: ${conceptKey}` });
-    }
+    if (!concept) return reply.code(404).send({ error: "Concept not found" });
 
-    const versionCount = await prisma.cardVersion.count({
-      where: { conceptKey },
-    });
-
-    let versions: any[] = [];
-    if (includeVersions) {
-      versions = await prisma.cardVersion.findMany({
-        where: { conceptKey },
-        orderBy: [{ versionCode: "asc" }],
-        skip: offset,
-        take: limit,
-        select: {
-          versionKey: true,
-          conceptKey: true,
-          conceptType: true,
-          versionCode: true,
-          finish: true,
-          attributes: true,
-          requirements: true,
-        },
-      });
-    }
-
-    return {
+    const result: any = {
       concept: {
         conceptKey: concept.hybridKey,
         setCode: concept.setCode,
         type: concept.type,
         slug: concept.slug,
         name: concept.name,
-        meta: concept.meta,
+        meta: concept.meta ?? null,
       },
-      versions: includeVersions
-        ? {
-            paging: { limit, offset, total: versionCount },
-            items: versions,
-          }
-        : null,
-      versionCount,
     };
+
+    if (!includeVersions) return result;
+
+    const total = await prisma.cardVersion.count({ where: { conceptKey } });
+
+    const versions = await prisma.cardVersion.findMany({
+      where: { conceptKey },
+      orderBy: [{ versionCode: "asc" }],
+      skip: offset,
+      take: limit,
+      select: {
+        versionKey: true,
+        conceptKey: true,
+        setCode: true,
+        conceptType: true,
+        versionCode: true,
+        finish: true,
+        attributes: true,
+        requirements: true,
+        artVerifiedKey: true,
+        artOfficialKey: true,
+      },
+    });
+
+    result.versions = {
+      paging: { limit, offset, total },
+      items: versions.map((v) => {
+        const sc = (v.setCode ?? concept.setCode) as string;
+        return {
+          versionKey: v.versionKey,
+          conceptKey: v.conceptKey,
+          setCode: sc,
+          conceptType: v.conceptType,
+          versionCode: v.versionCode,
+          finish: v.finish,
+          attributes: v.attributes,
+          requirements: asObjectOrEmpty(v.requirements),
+          cardBack: cardBackForSet(sc),
+          artFront: resolveArtFront(v),
+        };
+      }),
+    };
+
+    result.versionCount = total;
+    return result;
   });
 
   /**
-   * Alias route to avoid colons in URLs:
-   * GET /catalog/sets/:setCode/:type/:slug?includeVersions=true&limit=100&offset=0
+   * Direct path for a single card by {setCode}/{type}/{slug}.
    *
-   * Example:
-   *   /catalog/sets/griffey/HERO/NO_003
+   * GET /catalog/sets/:setCode/:type/:slug?includeVersions=true&limit=100&offset=0
    */
   app.get("/catalog/sets/:setCode/:type/:slug", async (req, reply) => {
     const { setCode, type, slug } = req.params as { setCode: string; type: string; slug: string };
-    const q =
-      (req.query as { includeVersions?: string; limit?: string; offset?: string }) ?? {};
+    const q = (req.query as { includeVersions?: string; limit?: string; offset?: string }) ?? {};
 
     const t = type.toUpperCase();
     if (!isCardType(t)) {
       return reply.code(400).send({ error: `Invalid type "${type}". Use HERO|PLAY|HOTDOG.` });
     }
 
-    const conceptKey = `${setCode}:${t}:${slug}`;
-
     const includeVersions = asBool(q.includeVersions, true);
     const limit = Math.min(Math.max(asInt(q.limit, 100), 1), 500);
     const offset = Math.max(asInt(q.offset, 0), 0);
 
     const concept = await prisma.cardConcept.findUnique({
-      where: { hybridKey: conceptKey },
-      select: {
-        hybridKey: true,
-        setCode: true,
-        type: true,
-        slug: true,
-        name: true,
-        meta: true,
-      },
+      where: { setCode_type_slug: { setCode, type: t as CardType, slug } },
+      select: { hybridKey: true, setCode: true, type: true, slug: true, name: true, meta: true },
     });
 
-    if (!concept) {
-      return reply.code(404).send({ error: `Concept not found: ${conceptKey}` });
-    }
+    if (!concept) return reply.code(404).send({ error: "Concept not found" });
 
-    const versionCount = await prisma.cardVersion.count({
-      where: { conceptKey },
-    });
-
-    let versions: any[] = [];
-    if (includeVersions) {
-      versions = await prisma.cardVersion.findMany({
-        where: { conceptKey },
-        orderBy: [{ versionCode: "asc" }],
-        skip: offset,
-        take: limit,
-        select: {
-          versionKey: true,
-          conceptKey: true,
-          conceptType: true,
-          versionCode: true,
-          finish: true,
-          attributes: true,
-          requirements: true,
-        },
-      });
-    }
-
-    return {
+    const result: any = {
       concept: {
         conceptKey: concept.hybridKey,
         setCode: concept.setCode,
         type: concept.type,
         slug: concept.slug,
         name: concept.name,
-        meta: concept.meta,
+        meta: concept.meta ?? null,
       },
-      versions: includeVersions
-        ? {
-            paging: { limit, offset, total: versionCount },
-            items: versions,
-          }
-        : null,
-      versionCount,
     };
+
+    if (!includeVersions) return result;
+
+    const total = await prisma.cardVersion.count({ where: { conceptKey: concept.hybridKey } });
+
+    const versions = await prisma.cardVersion.findMany({
+      where: { conceptKey: concept.hybridKey },
+      orderBy: [{ versionCode: "asc" }],
+      skip: offset,
+      take: limit,
+      select: {
+        versionKey: true,
+        conceptKey: true,
+        setCode: true,
+        conceptType: true,
+        versionCode: true,
+        finish: true,
+        attributes: true,
+        requirements: true,
+        artVerifiedKey: true,
+        artOfficialKey: true,
+      },
+    });
+
+    result.versions = {
+      paging: { limit, offset, total },
+      items: versions.map((v) => {
+        const sc = (v.setCode ?? concept.setCode) as string;
+        return {
+          versionKey: v.versionKey,
+          conceptKey: v.conceptKey,
+          setCode: sc,
+          conceptType: v.conceptType,
+          versionCode: v.versionCode,
+          finish: v.finish,
+          attributes: v.attributes,
+          requirements: asObjectOrEmpty(v.requirements),
+          cardBack: cardBackForSet(sc),
+          artFront: resolveArtFront(v),
+        };
+      }),
+    };
+
+    result.versionCount = total;
+    return result;
   });
 }
