@@ -142,12 +142,18 @@ model CardVersion {
 
   conceptKey String
   concept    CardConcept @relation(fields: [conceptKey], references: [hybridKey], onDelete: Restrict)
+  treatment    Treatment? @relation("CardVersionTreatment", fields: [setCode, treatmentKey], references: [setCode, key])
+
 
   // Convenience mirror for fast reads (and aligns with existing helper reads in games.routes.ts)
   conceptType CardType
+  setCode     String?
+
 
   versionCode String
   finish      Finish? @default(NONFOIL)
+  treatmentKey String?
+
 
   // Used by Rookie scoring helpers:
   // expect attributes.power for HERO cards
@@ -175,6 +181,26 @@ model CardVersion {
   @@index([conceptType])
   @@index([versionCode])
 }
+// ============================================================================
+// LFBO Phase 8E (Treatment Library, set-driven) — Schema-only add
+// Adds Treatment as a set-scoped registry for finishes/treatments.
+// No gameplay changes. No route changes.
+// ============================================================================
+
+model Treatment {
+  id          String   @id @default(cuid())
+  setCode      String
+  key          String
+  displayName  String
+  rarityTier   String
+  visualFlags  Json?
+  ladderWeight Int?
+  versions     CardVersion[] @relation("CardVersionTreatment")
+  createdAt    DateTime @default(now())
+
+  @@unique([setCode, key])
+}
+
 
 // -----------------------------------------------------------------------------
 // Decks (format-agnostic) + Game overlay
@@ -268,6 +294,30 @@ model GameEvent {
   @@index([type])
   @@index([cardVersionKey])
 }
+
+model EngineMatchArtifactV1 {
+  id          String   @id @default(cuid())
+  matchId     String   @unique
+  sessionId   String
+
+  // For quick querying without JSON parsing
+  formatId    String
+  formatVersion Int
+  gameModeId  String
+  gameModeVersion Int
+  engineCompatVersion Int
+
+  // Full audit payloads (immutable intent)
+  pointerJson      Json
+  snapshotsJson    Json
+  matchResultJson  Json
+  insightRecordJson Json
+
+  createdAt   DateTime @default(now())
+}
+
+
+
 
 // -----------------------------------------------------------------------------
 // Marketplace Engine
@@ -643,6 +693,7 @@ enum WalletAssetType {
   EARNED
   BONUS
   PAID
+  BOBUX
 }
 
 enum WalletTxReason {
@@ -655,6 +706,8 @@ enum WalletTxReason {
   ADMIN_ADJUST
   SIMULATION_SPEND
   WATCHDOG_SPEND
+  ROOKIE_MATCH_WIN
+  ROOKIE_MATCH_NO_WINNER
 }
 
 model Wallet {
@@ -775,4 +828,301 @@ model SimulationResult {
   createdAt  DateTime @default(now())
 
   job SimulationJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+}
+
+
+// ============================================================
+// Incentive Engine Models Appended Below
+// ============================================================
+
+
+// ============================================================
+// BoBA Incentive Engine — Data Models Only
+// Generated for archival + manual patching
+// No implementation logic included
+// ============================================================
+
+enum RewardDefinitionStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  RETIRED
+}
+
+enum RewardTriggerStatus {
+  ACTIVE
+  PAUSED
+  RETIRED
+}
+
+enum RewardTriggerType {
+  MANUAL_ADMIN_GRANT
+  EVENT_SUBMISSION
+  EVENT_RESULT
+  MATCH_COUNT
+  PURCHASE
+  REFERRAL
+  SEGMENT_MEMBERSHIP
+}
+
+enum RewardTriggerScopeType {
+  GLOBAL
+  EVENT
+  FORMAT
+  MODE
+  PRODUCT
+  SEGMENT
+}
+
+enum RewardLotExpirationPolicy {
+  RELATIVE_TTL
+  FIXED_DATE
+  MIN_OF_BOTH
+  NONE
+}
+
+enum RewardGrantState {
+  PENDING
+  CLAIMED
+  EXPIRED
+  REVOKED
+}
+
+enum RewardGrantClaimWindowSource {
+  DEFAULT
+  OVERRIDE
+  NONE
+}
+
+
+enum RewardEventType {
+  DEFINITION_CREATED
+  TRIGGER_MATCHED
+  GRANT_ISSUED
+  GRANT_VIEWED
+  GRANT_CLAIMED
+  LOT_MINTED
+  LOT_EXPIRED
+  GRANT_REVOKED
+}
+
+model RewardDefinition {
+  id        String @id @default(cuid())
+  code      String @unique
+  name      String
+  description String?
+
+  status    RewardDefinitionStatus @default(DRAFT)
+
+  startsAt  DateTime?
+  endsAt    DateTime?
+
+  defaultClaimWindowSeconds Int?
+
+  mintCurrency String @default("BOBUX")
+  mintAmount   Int    @default(0)
+
+  lotTtlSeconds       Int?
+  lotExpiresAtFixed   DateTime?
+  lotExpirationPolicy RewardLotExpirationPolicy @default(RELATIVE_TTL)
+
+  maxClaimsPerUser       Int?
+  maxClaimsGlobal        Int?
+  cooldownSecondsPerUser Int?
+
+  createdByAdminId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, startsAt, endsAt])
+}
+
+model RewardTrigger {
+  id           String @id @default(cuid())
+  definitionId String
+
+  status       RewardTriggerStatus @default(ACTIVE)
+  triggerType  RewardTriggerType
+  scopeType    RewardTriggerScopeType @default(GLOBAL)
+  scopeRef     String?
+
+  configJson   Json
+
+  priority     Int @default(0)
+
+  startsAt     DateTime?
+  endsAt       DateTime?
+
+  createdByAdminId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([definitionId, status])
+  @@index([triggerType, status])
+  @@index([scopeType, scopeRef])
+}
+
+model RewardGrant {
+  id           String @id @default(cuid())
+
+  definitionId String
+  triggerId    String?
+
+  userId       String
+
+  issuedAt       DateTime @default(now())
+  claimableFrom  DateTime?
+  claimableUntil DateTime?
+
+  claimWindowSource RewardGrantClaimWindowSource @default(DEFAULT)
+
+  state        RewardGrantState @default(PENDING)
+  claimedAt    DateTime?
+  expiredAt    DateTime?
+  revokedAt    DateTime?
+  revokedReason String?
+
+  grantKey     String? @unique
+
+  createdByAdminId String?
+  source       String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, state])
+  @@index([definitionId, state])
+  @@index([triggerId])
+}
+
+model RewardClaim {
+  id String @id @default(cuid())
+
+  grantId      String @unique
+  definitionId String
+  userId       String
+
+  claimedAt DateTime @default(now())
+
+  claimRequestId String? @unique
+
+  mintedTotal Int @default(0)
+  notes       String?
+
+  @@index([userId, claimedAt])
+  @@index([definitionId, claimedAt])
+}
+
+
+model RewardEvent {
+  id String @id @default(cuid())
+
+  eventType  RewardEventType
+  occurredAt DateTime @default(now())
+
+  userId       String?
+  definitionId String?
+  triggerId    String?
+  grantId      String?
+  claimId      String?
+  lotId        String?
+
+  metaJson Json?
+
+  @@index([eventType, occurredAt])
+  @@index([userId, occurredAt])
+}
+
+// -----------------------------------------------------------------------------
+// Tournament Artifacts (Engine-derived, immutable snapshots)
+// -----------------------------------------------------------------------------
+model TournamentArtifactV1 {
+  sponsorId String? 
+  sponsor   Sponsor? @relation(fields: [sponsorId], references: [id])
+
+  id            String   @id @default(cuid())
+  tournamentId  String   @unique
+  name          String
+  matchIdsJson  Json
+  standingsJson Json
+  rewardPolicyJson Json?
+  createdAt     DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+
+/// -----------------------------
+/// Milestone F — BoBucks Ledger
+/// Append-only economic spine
+/// -----------------------------
+
+enum BoBuckEntryType {
+  AWARDED
+  CLAIMED
+  SPENT
+  EXPIRED
+  UNCLAIMED_EXPIRED
+}
+
+enum BoBuckOrigin {
+  EARNED
+  PAID
+}
+
+model BoBuckLedger {
+  id             String   @id @default(cuid())
+  userId         String
+  type           BoBuckEntryType
+  origin         BoBuckOrigin
+  amount         Int
+  contextId      String?
+  awardedAt      DateTime?
+  claimedAt      DateTime?
+  expiresAt      DateTime?
+  spentAt        DateTime?
+  claimExpiresAt DateTime?
+  parentEntryId  String?
+  parentEntry    BoBuckLedger? @relation("BoBuckParent", fields: [parentEntryId], references: [id])
+  childEntries   BoBuckLedger[] @relation("BoBuckParent")
+  createdAt      DateTime @default(now())
+
+  @@index([userId])
+  @@index([contextId])
+  @@index([parentEntryId])
+}
+
+
+model Sponsor {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+
+  tournaments TournamentArtifactV1[]
+
+  pools SponsorPool[]
+}
+
+
+model SponsorPool {
+  id         String   @id @default(cuid())
+  sponsorId  String
+  name       String
+  createdAt  DateTime @default(now())
+
+  sponsor    Sponsor  @relation(fields: [sponsorId], references: [id])
+  ledger     SponsorPoolLedger[]
+}
+
+model SponsorPoolLedger {
+  id         String   @id @default(cuid())
+  poolId     String
+  type       String   // CREDIT | DEBIT
+  amount     Int
+  contextId  String?
+  createdAt  DateTime @default(now())
+  parentId   String?
+
+  pool       SponsorPool @relation(fields: [poolId], references: [id])
 }

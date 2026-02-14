@@ -1,0 +1,13 @@
+{
+  "formatRegistryId": "FMT_REG_DEFAULT",
+  "formatRegistryVersion": 1,
+  "formats": [
+    {
+      "formatId": "FMT_ROOKIE",
+      "formatVersion": 1,
+      "engineCompatVersion": 1,
+      "name": "Rookie",
+      "description": "Baseline format for deterministic engine validation."
+    }
+  ]
+}

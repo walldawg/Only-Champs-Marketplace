@@ -1,0 +1,11 @@
+{
+  "distributionId": "DIST_FORMAT_DEFAULT",
+  "distributionVersion": 1,
+  "registries": [
+    {
+      "formatRegistryId": "FMT_REG_DEFAULT",
+      "formatRegistryVersion": 1,
+      "isDefault": true
+    }
+  ]
+}
