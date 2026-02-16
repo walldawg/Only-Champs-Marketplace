@@ -268,6 +268,27 @@ app.get("/ui/matches", async (req, reply) => {
     <h1>Latest Matches</h1>
     <p class="meta">${headerNote}</p>
 
+    <div style="margin: 10px 0 14px 0; padding: 10px; border: 1px solid #e6e6e6; border-radius: 10px;">
+      <form method="get" action="/ui/matches" style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; margin:0;">
+        <div style="display:flex; flex-direction:column; gap:4px;">
+          <label class="muted" for="deckId" style="font-size:12px;">deckId (optional)</label>
+          <input id="deckId" name="deckId" value="${deckId ? esc(deckId) : ""}" placeholder="paste deckId…" style="min-width:340px; padding:8px; border:1px solid #ddd; border-radius:8px;" />
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:4px;">
+          <label class="muted" for="limit" style="font-size:12px;">limit</label>
+          <input id="limit" name="limit" value="${limit}" inputmode="numeric" style="width:90px; padding:8px; border:1px solid #ddd; border-radius:8px;" />
+        </div>
+
+        <button class="linkBtn" type="submit">Apply</button>
+
+        ${deckId ? `<a class="linkBtn" href="/ui/matches?limit=${limit}&offset=0">Clear deck filter</a>` : ""}
+      </form>
+      <div class="muted" style="margin-top:8px; font-size:12px;">
+        ${deckId ? `Filter active: <code>${esc(deckId)}</code>. Showing ${rows.length} match${rows.length===1?"":"es"} on this page.` : `No filter active. Showing ${rows.length} match${rows.length===1?"":"es"} on this page.`}
+      </div>
+    </div>
+
     <table>
       <thead>
         <tr>
