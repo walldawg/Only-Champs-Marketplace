@@ -1,5 +1,5 @@
 {
-  "gameModeRegistryId": "GM_REG_DEFAULT",
+  "gameModeRegistryId": "GMREG_DEFAULT",
   "gameModeRegistryVersion": 1,
   "gameModes": [
     {
@@ -7,13 +7,8 @@
       "gameModeVersion": 1,
       "engineCompatVersion": 1,
       "name": "Scored",
-      "description": "Baseline gamemode for deterministic engine validation.",
-      "formatGate": {
-        "mode": "ALLOW_LIST",
-        "allowedFormats": [
-          { "formatId": "FMT_ROOKIE", "formatVersion": 1 }
-        ]
-      }
+      "description": "Default scored mode",
+      "formatGate": { "mode": "OPEN" }
     }
   ]
 }

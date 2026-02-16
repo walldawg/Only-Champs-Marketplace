@@ -1,5 +1,5 @@
 {
-  "formatRegistryId": "FMT_REG_DEFAULT",
+  "formatRegistryId": "FMTREG_DEFAULT",
   "formatRegistryVersion": 1,
   "formats": [
     {
@@ -7,7 +7,7 @@
       "formatVersion": 1,
       "engineCompatVersion": 1,
       "name": "Rookie",
-      "description": "Baseline format for deterministic engine validation."
+      "description": "Default Rookie format"
     }
   ]
 }
