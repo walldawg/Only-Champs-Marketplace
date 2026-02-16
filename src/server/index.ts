@@ -4,12 +4,14 @@ import { PrismaClient } from "@prisma/client";
 
 import { registerGamesRoutes } from "./games.routes";
 import { registerDecksRoutes } from "./decks.routes";
+import { registerDecksUiRoutes } from "./decks.ui.routes";
 import * as catalog from "./catalog.routes";
 import { registerMarketplaceRoutes } from "./marketplace/marketplace.routes";
 import { registerEngineMatchRoutes } from "./engineMatch.routes.v1";
 import { registerTournamentRoutesV1 } from "./tournaments.routes.v1";
 import { registerSponsorPoolRoutesV1 } from "./sponsorPools.routes.v1";
 import { registerBoBucksRoutesV1 } from "./bobucks.routes.v1";
+import { registerRulesRoutesV1 } from "./rules.routes";
 
 const app = Fastify({ logger: true });
 const prisma = new PrismaClient();
@@ -26,7 +28,10 @@ const registerCatalogRoutesFn = () => {
 
 async function main() {
   await registerCatalogRoutesFn()(app);
+
+  // Deck API + UI surfaces
   await registerDecksRoutes(app);
+  await registerDecksUiRoutes(app);
 
   // Prisma-owned routes
   await registerGamesRoutes(app, prisma);
@@ -34,6 +39,7 @@ async function main() {
   await registerTournamentRoutesV1(app, prisma);
   await registerSponsorPoolRoutesV1(app, prisma);
   await registerBoBucksRoutesV1(app, prisma);
+  await registerRulesRoutesV1(app, prisma);
 
   await registerMarketplaceRoutes(app, prisma, {
     basePath: "/market",

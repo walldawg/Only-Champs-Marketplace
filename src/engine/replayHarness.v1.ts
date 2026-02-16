@@ -11,7 +11,8 @@ import { buildMatchResultRecordV1, type MatchResultRecordV1 } from "./matchResul
 export type ReplayInputsV1 = {
   sessionId: string;
   matchId: string;
-  pointer: SessionPointer;
+  pointer: SessionPointer & { ruleset?: { ruleSetKey: string; ruleSetVersion: number } | null };
+  ruleSetJson?: any | null;
 };
 
 export type ReplayDiffV1 = {
@@ -36,14 +37,15 @@ export function replayOnceV1(args: {
   formatRegistry: FormatRegistry;
   gameModeRegistry: GameModeRegistry;
 }): MatchResultRecordV1 {
-  const s = new SessionV1({ sessionId: args.inputs.sessionId, pointer: args.inputs.pointer });
+  const s = new SessionV1({ sessionId: args.inputs.sessionId, pointer: args.inputs.pointer as any, ruleSetJson: args.inputs.ruleSetJson ?? null });
   runSessionV1({
-  session: s,
-  appConfig: args.appConfig,
-  formatRegistry: args.formatRegistry,
-  gameModeRegistry: args.gameModeRegistry,
-  matchIdForDeterminism: args.inputs.matchId,
-});
+    session: s,
+    appConfig: args.appConfig,
+    formatRegistry: args.formatRegistry,
+    gameModeRegistry: args.gameModeRegistry,
+    matchIdForDeterminism: args.inputs.matchId,
+    ruleSetJson: args.inputs.ruleSetJson ?? null,
+  });
 
   return buildMatchResultRecordV1({ matchId: args.inputs.matchId, session: s });
 }

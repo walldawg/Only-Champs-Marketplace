@@ -1,25 +1,35 @@
 // src/server/engineMatch.routes.v1.ts
-// Phase 5 Option 1: HTTP wiring for certified Engine → Match → Insight → Store → Tournament → Rewards
-// No gameplay authority. Consumes certified artifacts only.
+// FULL FILE REPLACEMENT — Ruleset binding + persistence + debug surface.
+// Goal: If modeKey is bound (modeRuleBinding → ruleSet), attach:
+//   - pointer.ruleset
+//   - snapshotsJson.ruleSetSnapshot + ruleSetJson
+//   - timeline extra.rulesetId via SessionV1.rulesetId / matchResult builder
+// No gameplay changes. Deterministic replay only.
+//
+// Patch v1.0.2:
+// - matchType is NOT locked. Caller may pass matchType (e.g., TRAINING, RANKED, TOURNAMENT).
+// - Default matchType to TRAINING when omitted/blank.
+// - Persist matchType inside matchResultJson (JSON payload) without schema changes.
 
-import type { FastifyInstance } from "fastify";
-import type { PrismaClient } from "@prisma/client";
+import { FastifyInstance } from "fastify";
+import { PrismaClient } from "@prisma/client";
 
-import {
-  loadAppConfigDefault,
-  loadFormatRegistryDefault,
-  loadGameModeRegistryDefault,
-} from "../config/registryLoaders.v1";
-
+import { loadAppConfigDefault, loadFormatRegistryDefault, loadGameModeRegistryDefault } from "../config/registryLoaders.v1";
 import { replayOnceV1 } from "../engine/replayHarness.v1";
 import { buildPostGameBundleV1 } from "../postgame/postGameBundle.v1";
-import { deriveStandingsV1, type TournamentV1 } from "../tournaments/tournament.v1";
-import { deriveRewardsV1 } from "../rewards/rewardEngine.v1";
 
-import crypto from "node:crypto";
+function newId(prefix: string): string {
+  return `${prefix}_${cryptoRandom()}`;
+}
 
-function newId(prefix: string) {
-  return `${prefix}_${crypto.randomUUID()}`;
+function cryptoRandom(): string {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const crypto = require("node:crypto");
+  return crypto.randomUUID();
+}
+
+function upper(s: any): string {
+  return String(s ?? "").trim().toUpperCase();
 }
 
 export async function registerEngineMatchRoutes(app: FastifyInstance, prisma: PrismaClient) {
@@ -31,9 +41,6 @@ export async function registerEngineMatchRoutes(app: FastifyInstance, prisma: Pr
   // -------------------------------
   // POST /engine/matches/run
   // -------------------------------
-  // Optional identity fields:
-  // - homeCompetitorId, awayCompetitorId (strings)
-  // These enable ranked standings + placement payouts in downstream tournament derivation.
   app.post("/engine/matches/run", async (req: any, reply) => {
     try {
       const body = req.body ?? {};
@@ -41,7 +48,12 @@ export async function registerEngineMatchRoutes(app: FastifyInstance, prisma: Pr
       const sessionId = String(body.sessionId ?? newId("S_API"));
       const matchId = String(body.matchId ?? newId("M_API"));
 
-      const pointer = {
+      // Caller-controlled metadata (must not affect deterministic gameplay).
+      // Default: TRAINING
+      const matchType = upper(body.matchType ?? "TRAINING") || "TRAINING";
+
+      // Build pointer (and only then optionally attach ruleset)
+      const pointer: any = {
         format: {
           formatId: String(body.formatId ?? "FMT_ROOKIE"),
           formatVersion: Number(body.formatVersion ?? 1),
@@ -52,15 +64,7 @@ export async function registerEngineMatchRoutes(app: FastifyInstance, prisma: Pr
         },
       };
 
-      // Run (certified)
-      const matchResult = replayOnceV1({
-        inputs: { sessionId, matchId, pointer },
-        appConfig,
-        formatRegistry,
-        gameModeRegistry,
-      });
-
-      // Attach identity if provided (keeps engine certified; identity is metadata only)
+      // Optional identity injection (for ranked/tournament standings)
       const homeCompetitorId =
         typeof body.homeCompetitorId === "string" && body.homeCompetitorId.trim()
           ? body.homeCompetitorId.trim()
@@ -71,9 +75,58 @@ export async function registerEngineMatchRoutes(app: FastifyInstance, prisma: Pr
           ? body.awayCompetitorId.trim()
           : null;
 
-      const matchResultWithIdentity = { ...matchResult, homeCompetitorId, awayCompetitorId } as any;
+      // Optional ruleset snapshot (modeKey → binding → ruleset)
+      const modeKey = upper(body.modeKey ?? body.modeCode ?? "");
+      let ruleSetSnapshot: { ruleSetKey: string; ruleSetVersion: number } | null = null;
+      let ruleSetJson: any | null = null;
 
-      // Postgame bundle (certified + metadata passthrough)
+      if (modeKey) {
+        const bindingRow = await (prisma as any).modeRuleBinding.findUnique({
+          where: { modeKey },
+        });
+
+        if (bindingRow?.ruleSetKey && typeof bindingRow.ruleSetVersion === "number") {
+          ruleSetSnapshot = {
+            ruleSetKey: String(bindingRow.ruleSetKey),
+            ruleSetVersion: Number(bindingRow.ruleSetVersion),
+          };
+
+          // Attach to pointer so SessionV1 has the bound ruleset pointer
+          pointer.ruleset = ruleSetSnapshot;
+
+          const rs = await (prisma as any).ruleSet.findUnique({
+            where: { key_version: { key: ruleSetSnapshot.ruleSetKey, version: ruleSetSnapshot.ruleSetVersion } },
+          });
+
+          if (rs?.rulesJson) ruleSetJson = rs.rulesJson;
+        }
+      }
+
+      // Run (certified)
+      const matchResult = replayOnceV1({
+        inputs: {
+          sessionId,
+          matchId,
+          pointer,
+          ruleSetJson, // optional (null allowed)
+        } as any,
+        appConfig,
+        formatRegistry,
+        gameModeRegistry,
+      });
+
+      // Attach matchType (metadata) + identity if present
+      const matchResultWithMeta: any = {
+        ...matchResult,
+        matchType,
+      };
+
+      const matchResultWithIdentity =
+        homeCompetitorId || awayCompetitorId
+          ? ({ ...matchResultWithMeta, homeCompetitorId, awayCompetitorId } as any)
+          : (matchResultWithMeta as any);
+
+      // Postgame bundle (certified)
       const bundle = buildPostGameBundleV1({ matchResult: matchResultWithIdentity });
 
       // Persist (Milestone C2 model)
@@ -100,6 +153,8 @@ export async function registerEngineMatchRoutes(app: FastifyInstance, prisma: Pr
               gameModeVersion: matchResult.gameModeVersion,
               engineCompatVersion: matchResult.engineCompatVersion,
             },
+            ruleSetSnapshot: ruleSetSnapshot ?? null,
+            ruleSetJson: ruleSetJson ?? null,
           } as any,
           matchResultJson: matchResultWithIdentity as any,
           insightRecordJson: bundle.insightRecord as any,
@@ -134,78 +189,8 @@ export async function registerEngineMatchRoutes(app: FastifyInstance, prisma: Pr
 
       return reply.send({
         ok: true,
-        artifact: {
-          matchId: row.matchId,
-          sessionId: row.sessionId,
-          createdAt: row.createdAt,
-          pointer: row.pointerJson,
-          snapshots: row.snapshotsJson,
-          matchResult: row.matchResultJson,
-          insightRecord: row.insightRecordJson,
-        },
+        row,
       });
-    } catch (e: any) {
-      return reply.code(400).send({ ok: false, error: e.message ?? "BAD_REQUEST" });
-    }
-  });
-
-  // -------------------------------
-  // POST /engine/tournaments/derive
-  // Body: { tournamentId?, name?, matchIds: string[] }
-  // -------------------------------
-  app.post("/engine/tournaments/derive", async (req: any, reply) => {
-    try {
-      const body = req.body ?? {};
-      const matchIds: string[] = Array.isArray(body.matchIds) ? body.matchIds.map(String) : [];
-      if (matchIds.length === 0) throw new Error("BAD_REQUEST");
-
-      const rows = await prisma.engineMatchArtifactV1.findMany({
-        where: { matchId: { in: matchIds } },
-      });
-
-      const tournament: TournamentV1 = {
-        tournamentId: String(body.tournamentId ?? newId("T_API")),
-        name: String(body.name ?? "Tournament"),
-        matchIds,
-        createdAtIso: new Date().toISOString(),
-      };
-
-      const matchResults = rows.map((r) => r.matchResultJson as any);
-      const standings = deriveStandingsV1({ tournament, matchResults });
-
-      return reply.send({ ok: true, tournament, standings, found: rows.length });
-    } catch (e: any) {
-      return reply.code(400).send({ ok: false, error: e.message ?? "BAD_REQUEST" });
-    }
-  });
-
-  // -------------------------------
-  // POST /engine/rewards/derive
-  // Body: { tournamentId, name?, matchIds: string[] }
-  // Derives standings from stored matches, then derives rewards.
-  // -------------------------------
-  app.post("/engine/rewards/derive", async (req: any, reply) => {
-    try {
-      const body = req.body ?? {};
-      const matchIds: string[] = Array.isArray(body.matchIds) ? body.matchIds.map(String) : [];
-      if (matchIds.length === 0) throw new Error("BAD_REQUEST");
-
-      const rows = await prisma.engineMatchArtifactV1.findMany({
-        where: { matchId: { in: matchIds } },
-      });
-
-      const tournament: TournamentV1 = {
-        tournamentId: String(body.tournamentId ?? newId("T_API")),
-        name: String(body.name ?? "Tournament"),
-        matchIds,
-        createdAtIso: new Date().toISOString(),
-      };
-
-      const matchResults = rows.map((r) => r.matchResultJson as any);
-      const standings = deriveStandingsV1({ tournament, matchResults });
-      const rewards = deriveRewardsV1({ tournament, standings });
-
-      return reply.send({ ok: true, tournament, standings, rewards, found: rows.length });
     } catch (e: any) {
       return reply.code(400).send({ ok: false, error: e.message ?? "BAD_REQUEST" });
     }
