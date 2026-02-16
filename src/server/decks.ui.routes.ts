@@ -189,15 +189,35 @@ app.get("/ui/matches", async (req, reply) => {
   const deckId =
     typeof q.deckId === "string" && q.deckId.trim().length > 0 ? q.deckId.trim() : null;
 
-  const rows = await prisma.engineMatchArtifactV1.findMany({
+  
+  const rawLimit = Number(q.limit ?? 25);
+  const rawOffset = Number(q.offset ?? 0);
+  const limit = Math.min(Math.max(rawLimit || 25, 1), 200);
+  const offset = Math.max(rawOffset || 0, 0);
+
+  
+  // When deckId filter is present, we overfetch and filter in-memory because JSON filtering
+  // is not guaranteed across SQLite/Prisma versions.
+  const overTake = deckId ? Math.min(200, Math.max(limit * 10, 50)) : limit;
+  const rowsRaw = await prisma.engineMatchArtifactV1.findMany({
     orderBy: { createdAt: "desc" },
-    take: 50,
+    skip: deckId ? 0 : offset,
+    take: overTake,
+
     select: { matchId: true, createdAt: true, matchResultJson: true },
   });
 
+  const rows = (deckId
+    ? rowsRaw.filter((r) => {
+        const mr: any = r.matchResultJson as any;
+        return String(mr?.deckId ?? "") === String(deckId);
+      })
+    : rowsRaw
+  ).slice(deckId ? offset : 0, deckId ? offset + limit : undefined);
+
   const backHref = deckId ? `/ui/decks/${encodeURIComponent(deckId)}` : "/ui/decks";
   const headerNote = deckId
-    ? `Showing latest stored matches. Links will return to this deck.`
+    ? `Showing stored matches tagged to this deck.`
     : `Showing latest stored matches.`;
 
   const bodyRows =
@@ -262,7 +282,13 @@ app.get("/ui/matches", async (req, reply) => {
       <tbody>
         ${bodyRows}
       </tbody>
+    
     </table>
+    <div style="margin-top:16px;">
+      ${offset > 0 ? `<a class="linkBtn" href="/ui/matches?limit=${limit}&offset=${Math.max(offset - limit, 0)}${deckId ? `&deckId=${encodeURIComponent(deckId)}` : ``}">← Prev</a>` : ""}
+      ${rows.length === limit ? `<a class="linkBtn" style="margin-left:8px;" href="/ui/matches?limit=${limit}&offset=${offset + limit}${deckId ? `&deckId=${encodeURIComponent(deckId)}` : ``}">Next →</a>` : ""}
+    </div>
+
 
     <p class="meta">Tip: open a deck and run a match to generate new entries.</p>
     `
@@ -532,6 +558,26 @@ app.get("/ui/matches", async (req, reply) => {
     }
 
     const matchId = parsed?.stored?.matchId ?? null;
+
+    // Best-effort: tag the stored match artifact with deckId for UI filtering.
+    // Non-breaking: if this fails, the match still exists and UI still works via ?deckId= linkback.
+    if (matchId) {
+      try {
+        const art = await prisma.engineMatchArtifactV1.findFirst({
+          where: { matchId: String(matchId) },
+          select: { matchResultJson: true },
+        });
+        const mr: any = (art?.matchResultJson as any) ?? {};
+        if (!mr.deckId) {
+          await prisma.engineMatchArtifactV1.updateMany({
+            where: { matchId: String(matchId) },
+            data: { matchResultJson: { ...(mr || {}), deckId } as any },
+          });
+        }
+      } catch {
+        // ignore
+      }
+    }
 
     return reply.type("text/html; charset=utf-8").send(
       layout(
