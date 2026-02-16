@@ -542,7 +542,7 @@ app.get("/ui/matches", async (req, reply) => {
           <div class="box">
             <div><strong>matchId:</strong> ${matchId ? `<code>${esc(matchId)}</code>` : `<span class="muted">(not found in response)</span>`}</div>
             <p style="margin-top:10px;">
-              ${matchId ? `<a class="linkBtn" href="/ui/matches/${esc(matchId)}">Open Match Viewer</a> <span class="muted">|</span> <a href="/engine/matches/${esc(matchId)}" target="_blank">Open Stored Match Artifact (JSON)</a>` : ""}
+              ${matchId ? `<a class="linkBtn" href="/ui/matches/${esc(matchId)}?deckId=${encodeURIComponent(deckId)}">Open Match Viewer</a> <span class="muted">|</span> <a href="/engine/matches/${esc(matchId)}" target="_blank">Open Stored Match Artifact (JSON)</a>` : ""}
             </p>
             <details style="margin-top:10px;">
               <summary>Raw Response</summary>
