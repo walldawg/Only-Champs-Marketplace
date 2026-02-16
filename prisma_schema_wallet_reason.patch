@@ -1,0 +1,18 @@
+diff --git a/prisma/schema.prisma b/prisma/schema.prisma
+index 0000000..0000000 100644
+--- a/prisma/schema.prisma
++++ b/prisma/schema.prisma
+@@
+ enum WalletTxReason {
+   WALLET_ACTIVATION
+   CAMPAIGN_BONUS
+   PURCHASE
+   SPEND
+   REFUND
+   EXPIRE
+   ADMIN_ADJUST
+   SIMULATION_SPEND
+   WATCHDOG_SPEND
++  ROOKIE_MATCH_WIN
++  ROOKIE_MATCH_NO_WINNER
+ }

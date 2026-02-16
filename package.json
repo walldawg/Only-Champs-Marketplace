@@ -7,7 +7,18 @@
     "doc": "docs"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "tsx watch src/server/index.ts",
+    "start": "tsx src/server/index.ts",
+    "prisma:generate": "prisma generate",
+    "phase9:spine": "tsx src/contracts/gameplay/v1/phase9_spineProof.ts",
+    "phase10:tournament-proof": "tsx src/contracts/gameplay/v1/phase10_tournamentProof.ts",
+    "phase10:single-elim-proof": "tsx src/contracts/gameplay/v1/phase10_singleElimProof.ts",
+    "phase11:eligibility-proof": "tsx src/contracts/gameplay/v1/phase11_eligibilityProof.ts",
+    "phase12:rewards-proof": "tsx src/contracts/gameplay/v1/phase12_rewardsProof.ts",
+    "phase13:audit-proof": "tsx src/contracts/gameplay/v1/phase13_auditProof.ts",
+    "phase14:conformance-proof": "tsx src/contracts/gameplay/v1/phase14_conformanceProof.ts",
+    "phase15:boba-conformance-proof": "tsx src/contracts/gameplay/v1/phase15_bobaConformanceProof.ts",
+    "phase16:universe-boundary-proof": "tsx src/contracts/gameplay/v1/phase16_universeBoundaryProof.ts"
   },
   "repository": {
     "type": "git",
@@ -24,14 +35,15 @@
   "dependencies": {
     "@fastify/cors": "^11.2.0",
     "@fastify/jwt": "^10.0.0",
-    "@prisma/client": "^7.3.0",
+    "@prisma/client": "^6.19.2",
     "fastify": "^5.7.4",
-    "prisma": "^7.3.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/node": "^25.2.1",
+    "prisma": "^6.19.2",
     "tsx": "^4.21.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "xlsx": "^0.18.5"
   }
 }

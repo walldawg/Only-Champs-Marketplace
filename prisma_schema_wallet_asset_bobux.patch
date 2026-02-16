@@ -1,0 +1,10 @@
+diff --git a/prisma/schema.prisma b/prisma/schema.prisma
+--- a/prisma/schema.prisma
++++ b/prisma/schema.prisma
+@@
+ enum WalletAssetType {
++  BOBUX
+   EARNED
+   BONUS
+   PAID
+ }

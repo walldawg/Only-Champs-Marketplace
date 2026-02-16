@@ -1,0 +1,27 @@
+{
+  "formatRegistryId": "FMT_REG_EXAMPLE_CORE",
+  "formatRegistryVersion": 1,
+  "formats": [
+    {
+      "formatId": "FMT_ROOKIE",
+      "formatVersion": 1,
+      "engineCompatVersion": 1,
+      "name": "Rookie",
+      "description": "Baseline format for deterministic engine validation."
+    },
+    {
+      "formatId": "FMT_SUBSTITUTION",
+      "formatVersion": 1,
+      "engineCompatVersion": 1,
+      "name": "Substitution",
+      "description": "Pre-reveal paid swap window; mirrored pairing invariant unchanged."
+    },
+    {
+      "formatId": "FMT_PLAYMAKER",
+      "formatVersion": 1,
+      "engineCompatVersion": 1,
+      "name": "Playmaker",
+      "description": "Substitution + post-reveal play windows + status layer."
+    }
+  ]
+}

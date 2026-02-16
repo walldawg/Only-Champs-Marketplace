@@ -1,106 +1,1160 @@
+// prisma/schema.prisma
+// Full file replacement — Catalog (read-only truth) + Deck/Game overlays
+// + Marketplace Engine (Ownership + Verification + Visibility + Listings + Orders + Transfers)
+// SQLite-safe JSON defaults (quoted string literals)
+
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "sqlite"
+  url      = env("DATABASE_URL")
 }
 
+enum CardType {
+  HERO
+  PLAY
+  HOTDOG
+}
+
+enum Finish {
+  NONFOIL
+  FOIL
+}
+
+enum GameStatus {
+  LOBBY
+  ACTIVE
+  ENDED
+}
+
+// -----------------------------------------------------------------------------
+// Marketplace Engine enums
+// -----------------------------------------------------------------------------
+
+enum VerificationScope {
+  VERSION
+  INSTANCE
+}
+
+enum VerificationLane {
+  COMMUNITY
+  ADMIN
+}
+
+enum VerificationStatus {
+  SUBMITTED
+  APPROVED
+  REJECTED
+  REVOKED
+}
+
+enum VerificationVoteValue {
+  APPROVE
+  REJECT
+}
+
+enum InventoryVisibilityState {
+  PRIVATE
+  AVAILABLE_TRADE
+  AVAILABLE_SELL
+}
+
+enum ListingKind {
+  SALE
+  TRADE
+}
+
+enum ListingStatus {
+  ACTIVE
+  PAUSED
+  CANCELLED
+  SOLD_OUT
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  FULFILLED
+}
+
+enum TransferStatus {
+  PENDING
+  COMPLETED
+  REVERSED
+}
+
+enum LedgerReason {
+  MINT
+  ADMIN_ADJUST
+  LIST_CREATE_LOCK
+  LIST_CANCEL_RELEASE
+  ORDER_RESERVE
+  ORDER_CANCEL_RELEASE
+  SALE_COMPLETE
+  TRANSFER_COMPLETE
+}
+
+enum OddityType {
+  ERROR_BACK
+  MISPRINT
+  MISCUT
+  GHOST
+  POWER_VARIANT
+  OTHER
+}
+
+enum ReviewStatus {
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+}
+
+// -----------------------------------------------------------------------------
+// Catalog (read-only truth from manufacturer imports)
+// -----------------------------------------------------------------------------
 
 model CardConcept {
-  id              String   @id @default(cuid())
-  type            String
-  displayName     String
-  nameNorm        String
-  signature       String   @unique
-  rulesText       String?
-  baseAttributes  Json?
-  createdAt       DateTime @default(now())
+  // Identity: {setCode}:{type}:{slug}
+  hybridKey String   @id
+  setCode   String
+  type      CardType
+  slug      String
 
-  versions        CardVersion[]
+  name String?
+  meta Json    @default(dbgenerated("'{}'"))
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  versions CardVersion[]
+
+  @@unique([setCode, type, slug])
+  @@index([setCode])
+  @@index([type])
 }
 
 model CardVersion {
-  id                     String   @id @default(cuid())
-  conceptId              String
-  editionId              String
-  treatmentPrefix        String
-  treatmentName          String
-  weaponType             String?
-  rarity                 String
-  scarcityKind           String
-  capValue               Int?
-  serializationRequired  Boolean  @default(false)
-  isClaimable            Boolean  @default(false)
-  metadata               Json?
-  createdAt              DateTime @default(now())
+  // Identity: {setCode}:{type}:{slug}:{versionCode}
+  versionKey String @id
 
-  concept                CardConcept @relation(fields: [conceptId], references: [id])
-  instances              CardInstance[]
+  conceptKey String
+  concept    CardConcept @relation(fields: [conceptKey], references: [hybridKey], onDelete: Restrict)
+  treatment    Treatment? @relation("CardVersionTreatment", fields: [setCode, treatmentKey], references: [setCode, key])
+
+
+  // Convenience mirror for fast reads (and aligns with existing helper reads in games.routes.ts)
+  conceptType CardType
+  setCode     String?
+
+
+  versionCode String
+  finish      Finish? @default(NONFOIL)
+  artVerifiedKey String?
+  artOfficialKey String?
+  treatmentKey String?
+
+
+  // Used by Rookie scoring helpers:
+  // expect attributes.power for HERO cards
+  attributes   Json @default(dbgenerated("'{}'"))
+  requirements Json @default(dbgenerated("'{}'"))
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // overlays
+  deckLinks  DeckCardVersion[]
+  gameEvents GameEvent[] @relation("GameEventCardVersion")
+
+  // marketplace anchors (read-only pointers via versionKey only)
+  ownershipLots OwnershipLot[]
+  instances     UserCardInstance[]
+  listingLines  ListingLine[]
+  odditySubmissions OdditySubmission[]
+
+  // marketplace reverse relations
+  inventoryLedger InventoryLedger[]
+  visibilityVersions InventoryVisibilityVersion[]
+
+  @@index([conceptKey])
+  @@index([conceptType])
+  @@index([versionCode])
 }
+// ============================================================================
+// LFBO Phase 8E (Treatment Library, set-driven) — Schema-only add
+// Adds Treatment as a set-scoped registry for finishes/treatments.
+// No gameplay changes. No route changes.
+// ============================================================================
 
-model CardInstance {
-  id            String   @id @default(cuid())
-  versionId     String
-  serialLabel   String?
-  serialNumber  Int?
-  serialTotal   Int?
-  authVariant   String?
-  claimStatus   String
-  createdAt     DateTime @default(now())
-
-  version       CardVersion @relation(fields: [versionId], references: [id])
-  ownerships    Ownership[]
-  locks         Lock[]
-}
-
-model Ownership {
-  id            String   @id @default(cuid())
-  instanceId    String
-  ownerUserId  String
-  fromUserId   String?
-  acquiredVia  String
-  active       Boolean  @default(true)
-  timestamp    DateTime @default(now())
-
-  instance     CardInstance @relation(fields: [instanceId], references: [id])
-}
-
-model Lock {
+model Treatment {
   id          String   @id @default(cuid())
-  instanceId String
-  lockType    String
-  scope       String
-  expiresAt  DateTime?
-  createdBy  String
-  createdAt  DateTime @default(now())
+  setCode      String
+  key          String
+  displayName  String
+  rarityTier   String
+  visualFlags  Json?
+  ladderWeight Int?
+  versions     CardVersion[] @relation("CardVersionTreatment")
+  createdAt    DateTime @default(now())
 
-  instance   CardInstance @relation(fields: [instanceId], references: [id])
+  @@unique([setCode, key])
 }
+
+
+// -----------------------------------------------------------------------------
+// Decks (format-agnostic) + Game overlay
+// -----------------------------------------------------------------------------
+
+model Deck {
+  id          String  @id @default(uuid())
+  name        String
+  ownerUserId String?
+
+  archivedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  cards       DeckCardVersion[]
+  gamePlayers GamePlayer[]
+
+  @@index([ownerUserId])
+  @@index([archivedAt])
+}
+
+model DeckCardVersion {
+  id         String @id @default(uuid())
+  deckId     String
+  versionKey String
+  qty        Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  deck        Deck        @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  cardVersion CardVersion @relation(fields: [versionKey], references: [versionKey], onDelete: Restrict)
+
+  @@unique([deckId, versionKey])
+  @@index([versionKey])
+}
+
+model Game {
+  id       String     @id @default(uuid())
+  modeCode String?
+  status   GameStatus @default(LOBBY)
+
+  state Json @default(dbgenerated("'{}'"))
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  players GamePlayer[]
+  events  GameEvent[]
+
+  @@index([status])
+  @@index([modeCode])
+}
+
+model GamePlayer {
+  id     String @id @default(uuid())
+  gameId String
+  seat   Int
+  deckId String
+
+  createdAt DateTime @default(now())
+
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  deck Deck @relation(fields: [deckId], references: [id], onDelete: Restrict)
+
+  @@unique([gameId, seat])
+  @@index([deckId])
+}
+
+model GameEvent {
+  id     String @id @default(uuid())
+  gameId String
+  seq    Int
+  type   String
+
+  payload Json @default(dbgenerated("'{}'"))
+
+  actorSeat      Int?
+  cardVersionKey String?
+
+  createdAt DateTime @default(now())
+
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  // Optional link to a CardVersion (overlay-only reference)
+  cardVersion CardVersion? @relation("GameEventCardVersion", fields: [cardVersionKey], references: [versionKey], onDelete: SetNull)
+
+  @@unique([gameId, seq])
+  @@index([gameId, createdAt])
+  @@index([type])
+  @@index([cardVersionKey])
+}
+
+model EngineMatchArtifactV1 {
+  id          String   @id @default(cuid())
+  matchId     String   @unique
+  sessionId   String
+
+  // For quick querying without JSON parsing
+  formatId    String
+  formatVersion Int
+  gameModeId  String
+  gameModeVersion Int
+  engineCompatVersion Int
+
+  // Full audit payloads (immutable intent)
+  pointerJson      Json
+  snapshotsJson    Json
+  matchResultJson  Json
+  insightRecordJson Json
+
+  createdAt   DateTime @default(now())
+}
+
+
+
+
+// -----------------------------------------------------------------------------
+// Marketplace Engine
+// RULES:
+// - Catalog is read-only truth.
+// - Ownership can exist unverified.
+// - Verification is required to expose availability, list, and transfer.
+// - Hidden profiles expose ONLY AVAILABLE_* items (visibility layer).
+// -----------------------------------------------------------------------------
+
+// --- Ownership (quantity-based lots; references catalog via versionKey) ---
+
+model OwnershipLot {
+  id         String @id @default(uuid())
+  ownerId    String
+  versionKey String
+
+  qtyTotal     Int @default(1)
+  qtyAvailable Int @default(1)
+
+  acquiredAt DateTime?
+  source     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  cardVersion CardVersion @relation(fields: [versionKey], references: [versionKey], onDelete: Restrict)
+
+  @@index([ownerId])
+  @@index([versionKey])
+  @@index([ownerId, versionKey])
+}
+
+model InventoryLedger {
+  id         String @id @default(uuid())
+  ownerId    String
+  versionKey String
+
+  deltaQty Int
+  reason   LedgerReason
+
+  // Reference a listing/order/transfer/etc.
+  refType String?
+  refId   String?
+
+  createdAt DateTime @default(now())
+
+  cardVersion CardVersion @relation(fields: [versionKey], references: [versionKey], onDelete: Restrict)
+
+  @@index([ownerId])
+  @@index([versionKey])
+  @@index([createdAt])
+  @@index([refType, refId])
+}
+
+// --- Instances (for serialized/unique cards; still anchored to catalog via versionKey) ---
+
+model UserCardInstance {
+  id         String @id @default(uuid())
+  ownerId    String
+  versionKey String
+
+  // Instance detail
+  serialNumber Int?
+  serialMax    Int?
+  treatment    String?
+  condition    String?
+  isAutograph  Boolean @default(false)
+
+  // Oddities live here (collector culture layer; not used by sims)
+  oddityType  OddityType?
+  oddityNotes String?
+
+  // Evidence pointers (storage implementation up to you)
+  frontImageUrl String?
+  backImageUrl  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  cardVersion CardVersion @relation(fields: [versionKey], references: [versionKey], onDelete: Restrict)
+
+  listings ListingLineInstance[]
+  visibilityInstances InventoryVisibilityInstance[]
+
+  verifications Verification[] @relation("VerificationInstance")
+
+  @@index([versionKey])
+  @@index([ownerId])
+  @@index([serialNumber, serialMax])
+}
+
+// --- Verification (hybrid: community + admin; same record shape) ---
+
+model Verification {
+  id      String @id @default(uuid())
+  ownerId String
+
+  scope VerificationScope
+  lane  VerificationLane
+  status VerificationStatus @default(SUBMITTED)
+
+  // VERSION scope pointer
+  versionKey String?
+
+  // INSTANCE scope pointer (references UserCardInstance.id)
+  instanceId String?
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  decidedAt  DateTime?
+
+  // relations
+  instance UserCardInstance? @relation("VerificationInstance", fields: [instanceId], references: [id], onDelete: Cascade)
+
+  evidence VerificationEvidence[]
+  votes    VerificationVote[]
+  escalation VerificationEscalation?
+
+  @@index([ownerId])
+  @@index([scope, status])
+  @@index([versionKey])
+  @@index([instanceId])
+  @@index([lane, status])
+}
+
+model VerificationEvidence {
+  id             String @id @default(uuid())
+  verificationId String
+
+  type String
+  uri  String
+  meta Json @default(dbgenerated("'{}'"))
+
+  createdAt DateTime @default(now())
+
+  verification Verification @relation(fields: [verificationId], references: [id], onDelete: Cascade)
+
+  @@index([verificationId])
+  @@index([createdAt])
+}
+
+model VerificationVote {
+  id             String @id @default(uuid())
+  verificationId String
+  voterId        String
+  vote           VerificationVoteValue
+
+  createdAt DateTime @default(now())
+
+  verification Verification @relation(fields: [verificationId], references: [id], onDelete: Cascade)
+
+  @@unique([verificationId, voterId])
+  @@index([verificationId])
+  @@index([voterId])
+}
+
+model VerificationEscalation {
+  id             String @id @default(uuid())
+  verificationId String @unique
+  reason         String
+
+  createdAt DateTime @default(now())
+
+  resolvedByAdminId String?
+  resolvedAt        DateTime?
+
+  verification Verification @relation(fields: [verificationId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+}
+
+// --- Visibility (player-controlled public surface; hidden profiles show ONLY AVAILABLE_*) ---
+
+model InventoryVisibilityVersion {
+  id        String @id @default(uuid())
+  ownerId   String
+  versionKey String
+
+  visibility InventoryVisibilityState @default(PRIVATE)
+  autoMatchEnabled Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  cardVersion CardVersion @relation(fields: [versionKey], references: [versionKey], onDelete: Restrict)
+
+  @@unique([ownerId, versionKey])
+  @@index([ownerId])
+  @@index([versionKey])
+  @@index([visibility])
+}
+
+model InventoryVisibilityInstance {
+  id        String @id @default(uuid())
+  ownerId   String
+  instanceId String
+
+  visibility InventoryVisibilityState @default(PRIVATE)
+  autoMatchEnabled Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  instance UserCardInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+
+  @@unique([ownerId, instanceId])
+  @@index([ownerId])
+  @@index([instanceId])
+  @@index([visibility])
+}
+
+// --- Listings (explicit priced offers; quantity locks against ownership) ---
 
 model Listing {
-  id            String   @id @default(cuid())
-  instanceId    String
-  sellerUserId String
-  price         Float
-  status        String
-  createdAt    DateTime @default(now())
+  id       String @id @default(uuid())
+  sellerId String
+
+  kind   ListingKind
+  status ListingStatus @default(ACTIVE)
+
+  currency    String?
+  priceCents  Int?
+
+  notes String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  lines ListingLine[]
+  instanceLines ListingLineInstance[]
+
+
+  @@index([sellerId])
+  @@index([status])
+  @@index([kind])
 }
 
-model Trade {
-  id          String   @id @default(cuid())
-  status      String
+model ListingLine {
+  id        String @id @default(uuid())
+  listingId String
+  versionKey String
+
+  qtyListed   Int @default(1)
+  qtyReserved Int @default(0)
+  qtySold     Int @default(0)
+
+  cardVersion CardVersion @relation(fields: [versionKey], references: [versionKey], onDelete: Restrict)
+  listing     Listing     @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([listingId])
+  @@index([versionKey])
+}
+
+model ListingLineInstance {
+  id        String @id @default(uuid())
+  listingId String
+  instanceId String
+
+  // instance listings are always qty=1 by definition
+  reserved Boolean @default(false)
+  sold     Boolean @default(false)
+
+  listing  Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  instance UserCardInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+
+  @@index([listingId])
+  @@index([instanceId])
+}
+
+// --- Orders (reservation + confirm/cancel) ---
+
+model Order {
+  id      String @id @default(uuid())
+  buyerId String
+
+  status   OrderStatus @default(PENDING)
+  currency String?
+  subtotalCents Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  lines OrderLine[]
+  transfers InventoryTransfer[]
+
+  @@index([buyerId])
+  @@index([status])
+}
+
+model OrderLine {
+  id      String @id @default(uuid())
+  orderId String
+
+  listingId String?
+  versionKey String?
+
+  // instance order line
+  instanceId String?
+
+  qty       Int @default(1)
+  unitPriceCents Int?
+  lineTotalCents Int?
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([listingId])
+  @@index([versionKey])
+  @@index([instanceId])
+}
+
+// --- Transfers (chain-of-custody movement record) ---
+
+model InventoryTransfer {
+  id String @id @default(uuid())
+
+  fromUserId String
+  toUserId   String
+
+  orderId String?
+  status  TransferStatus @default(PENDING)
+
+  createdAt   DateTime @default(now())
+  completedAt DateTime?
+
+  order Order? @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@index([fromUserId])
+  @@index([toUserId])
+  @@index([orderId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// -----------------------------------------------------------------------------
+// Oddity submissions (admin gate; prevents “fake custom card” abuse)
+// Users can submit anomalies ONLY against an existing CardVersion.
+// -----------------------------------------------------------------------------
+
+model OdditySubmission {
+  id              String @id @default(uuid())
+  submitterUserId String
+  versionKey      String
+
+  oddityType   OddityType
+  claimSummary String?
+
+  frontImageUrl String?
+  backImageUrl  String?
+
+  status     ReviewStatus @default(PENDING_REVIEW)
+  adminNotes String?
+
+  createdAt  DateTime  @default(now())
+  reviewedAt DateTime?
+
+  cardVersion CardVersion @relation(fields: [versionKey], references: [versionKey], onDelete: Restrict)
+
+  @@index([versionKey])
+  @@index([submitterUserId])
+  @@index([status])
+}
+
+
+// -----------------------------------------------------------------------------
+// Wallet + Bobux Ledger (Prototype)
+// One wallet contains multiple asset types (EARNED / BONUS / PAID).
+// Ledger is transaction-first; expiry is modeled on credit transactions via expiresAt.
+// -----------------------------------------------------------------------------
+
+enum WalletAssetType {
+  EARNED
+  BONUS
+  PAID
+  BOBUX
+}
+
+enum WalletTxReason {
+  WALLET_ACTIVATION
+  CAMPAIGN_BONUS
+  PURCHASE
+  SPEND
+  REFUND
+  EXPIRE
+  ADMIN_ADJUST
+  SIMULATION_SPEND
+  WATCHDOG_SPEND
+  ROOKIE_MATCH_WIN
+  ROOKIE_MATCH_NO_WINNER
+}
+
+model Wallet {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  assets     WalletAsset[]
+  txs        WalletTransaction[]
+  autoRefill AutoRefillConfig?
+}
+
+model WalletAsset {
+  id        String         @id @default(uuid())
+  walletId  String
+  assetType WalletAssetType
+  balance   Int            @default(0)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  @@unique([walletId, assetType])
+  @@index([walletId])
+  @@index([assetType])
+}
+
+model WalletTransaction {
+  id        String         @id @default(uuid())
+  walletId  String
+  assetType WalletAssetType
+  amount    Int
+  reason    WalletTxReason
+  refType   String?
+  refId     String?
+  expiresAt DateTime?
+  createdAt DateTime       @default(now())
+
+  wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  @@index([walletId, createdAt])
+  @@index([assetType])
+  @@index([reason])
+  @@index([expiresAt])
+}
+
+model AutoRefillConfig {
+  id              String   @id @default(uuid())
+  walletId         String   @unique
+  enabled          Boolean  @default(false)
+  triggerThreshold Int      @default(0)
+  refillAmount     Int      @default(0)
+  maxRefillsPerDay Int      @default(0)
+  lastRefillAt     DateTime?
+  refillsToday     Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+}
+
+// -----------------------------------------------------------------------------
+// Simulation Jobs (Prototype)
+// Cost is intensity-based via Compute Units (cu). Mode controls priority multiplier.
+// No queue processor implemented here; this is schema-only groundwork.
+// -----------------------------------------------------------------------------
+
+enum SimulationMode {
+  INSTANT
+  STANDARD
+  PASSIVE
+}
+
+enum SimulationJobStatus {
+  QUEUED
+  RUNNING
+  COMPLETE
+  FAILED
+  CANCELLED
+  PAUSED_BUDGET
+  PAUSED_NO_FUNDS
+}
+
+enum SimulationSpendPreference {
+  EARNED_FIRST
+}
+
+model SimulationJob {
+  id              String              @id @default(uuid())
+  userId          String
+  deckId          String?
+  mode            SimulationMode      @default(STANDARD)
+  status          SimulationJobStatus @default(QUEUED)
+
+  cu              Int
+  estimatedBobux  Int
+  spendPreference SimulationSpendPreference @default(EARNED_FIRST)
+
+  inputJson       Json
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  startedAt       DateTime?
+  finishedAt      DateTime?
+
+  result SimulationResult?
+
+  @@index([userId, createdAt])
+  @@index([status])
+  @@index([mode])
+}
+
+model SimulationResult {
+  id         String   @id @default(uuid())
+  jobId      String   @unique
+  summaryJson Json
   createdAt  DateTime @default(now())
+
+  job SimulationJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
 }
 
-model AuditLog {
-  id          String   @id @default(cuid())
-  actorUserId String
-  entityType  String
-  entityId    String
-  action      String
-  beforeState Json?
-  afterState  Json?
-  reason      String?
-  timestamp   DateTime @default(now())
+
+// ============================================================
+// Incentive Engine Models Appended Below
+// ============================================================
+
+
+// ============================================================
+// BoBA Incentive Engine — Data Models Only
+// Generated for archival + manual patching
+// No implementation logic included
+// ============================================================
+
+enum RewardDefinitionStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  RETIRED
+}
+
+enum RewardTriggerStatus {
+  ACTIVE
+  PAUSED
+  RETIRED
+}
+
+enum RewardTriggerType {
+  MANUAL_ADMIN_GRANT
+  EVENT_SUBMISSION
+  EVENT_RESULT
+  MATCH_COUNT
+  PURCHASE
+  REFERRAL
+  SEGMENT_MEMBERSHIP
+}
+
+enum RewardTriggerScopeType {
+  GLOBAL
+  EVENT
+  FORMAT
+  MODE
+  PRODUCT
+  SEGMENT
+}
+
+enum RewardLotExpirationPolicy {
+  RELATIVE_TTL
+  FIXED_DATE
+  MIN_OF_BOTH
+  NONE
+}
+
+enum RewardGrantState {
+  PENDING
+  CLAIMED
+  EXPIRED
+  REVOKED
+}
+
+enum RewardGrantClaimWindowSource {
+  DEFAULT
+  OVERRIDE
+  NONE
+}
+
+
+enum RewardEventType {
+  DEFINITION_CREATED
+  TRIGGER_MATCHED
+  GRANT_ISSUED
+  GRANT_VIEWED
+  GRANT_CLAIMED
+  LOT_MINTED
+  LOT_EXPIRED
+  GRANT_REVOKED
+}
+
+model RewardDefinition {
+  id        String @id @default(cuid())
+  code      String @unique
+  name      String
+  description String?
+
+  status    RewardDefinitionStatus @default(DRAFT)
+
+  startsAt  DateTime?
+  endsAt    DateTime?
+
+  defaultClaimWindowSeconds Int?
+
+  mintCurrency String @default("BOBUX")
+  mintAmount   Int    @default(0)
+
+  lotTtlSeconds       Int?
+  lotExpiresAtFixed   DateTime?
+  lotExpirationPolicy RewardLotExpirationPolicy @default(RELATIVE_TTL)
+
+  maxClaimsPerUser       Int?
+  maxClaimsGlobal        Int?
+  cooldownSecondsPerUser Int?
+
+  createdByAdminId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, startsAt, endsAt])
+}
+
+model RewardTrigger {
+  id           String @id @default(cuid())
+  definitionId String
+
+  status       RewardTriggerStatus @default(ACTIVE)
+  triggerType  RewardTriggerType
+  scopeType    RewardTriggerScopeType @default(GLOBAL)
+  scopeRef     String?
+
+  configJson   Json
+
+  priority     Int @default(0)
+
+  startsAt     DateTime?
+  endsAt       DateTime?
+
+  createdByAdminId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([definitionId, status])
+  @@index([triggerType, status])
+  @@index([scopeType, scopeRef])
+}
+
+model RewardGrant {
+  id           String @id @default(cuid())
+
+  definitionId String
+  triggerId    String?
+
+  userId       String
+
+  issuedAt       DateTime @default(now())
+  claimableFrom  DateTime?
+  claimableUntil DateTime?
+
+  claimWindowSource RewardGrantClaimWindowSource @default(DEFAULT)
+
+  state        RewardGrantState @default(PENDING)
+  claimedAt    DateTime?
+  expiredAt    DateTime?
+  revokedAt    DateTime?
+  revokedReason String?
+
+  grantKey     String? @unique
+
+  createdByAdminId String?
+  source       String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, state])
+  @@index([definitionId, state])
+  @@index([triggerId])
+}
+
+model RewardClaim {
+  id String @id @default(cuid())
+
+  grantId      String @unique
+  definitionId String
+  userId       String
+
+  claimedAt DateTime @default(now())
+
+  claimRequestId String? @unique
+
+  mintedTotal Int @default(0)
+  notes       String?
+
+  @@index([userId, claimedAt])
+  @@index([definitionId, claimedAt])
+}
+
+
+model RewardEvent {
+  id String @id @default(cuid())
+
+  eventType  RewardEventType
+  occurredAt DateTime @default(now())
+
+  userId       String?
+  definitionId String?
+  triggerId    String?
+  grantId      String?
+  claimId      String?
+  lotId        String?
+
+  metaJson Json?
+
+  @@index([eventType, occurredAt])
+  @@index([userId, occurredAt])
+}
+
+// -----------------------------------------------------------------------------
+// Tournament Artifacts (Engine-derived, immutable snapshots)
+// -----------------------------------------------------------------------------
+model TournamentArtifactV1 {
+  sponsorId String? 
+  sponsor   Sponsor? @relation(fields: [sponsorId], references: [id])
+
+  id            String   @id @default(cuid())
+  tournamentId  String   @unique
+  name          String
+  matchIdsJson  Json
+  standingsJson Json
+  rewardPolicyJson Json?
+  createdAt     DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+
+/// -----------------------------
+/// Milestone F — BoBucks Ledger
+/// Append-only economic spine
+/// -----------------------------
+
+enum BoBuckEntryType {
+  AWARDED
+  CLAIMED
+  SPENT
+  EXPIRED
+  UNCLAIMED_EXPIRED
+}
+
+enum BoBuckOrigin {
+  EARNED
+  PAID
+}
+
+model BoBuckLedger {
+  id             String   @id @default(cuid())
+  userId         String
+  type           BoBuckEntryType
+  origin         BoBuckOrigin
+  amount         Int
+  contextId      String?
+  awardedAt      DateTime?
+  claimedAt      DateTime?
+  expiresAt      DateTime?
+  spentAt        DateTime?
+  claimExpiresAt DateTime?
+  parentEntryId  String?
+  parentEntry    BoBuckLedger? @relation("BoBuckParent", fields: [parentEntryId], references: [id])
+  childEntries   BoBuckLedger[] @relation("BoBuckParent")
+  createdAt      DateTime @default(now())
+
+  @@index([userId])
+  @@index([contextId])
+  @@index([parentEntryId])
+}
+
+
+model Sponsor {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+
+  tournaments TournamentArtifactV1[]
+
+  pools SponsorPool[]
+}
+
+
+model SponsorPool {
+  id         String   @id @default(cuid())
+  sponsorId  String
+  name       String
+  createdAt  DateTime @default(now())
+
+  sponsor    Sponsor  @relation(fields: [sponsorId], references: [id])
+  ledger     SponsorPoolLedger[]
+}
+
+model SponsorPoolLedger {
+  id         String   @id @default(cuid())
+  poolId     String
+  type       String   // CREDIT | DEBIT
+  amount     Int
+  contextId  String?
+  createdAt  DateTime @default(now())
+  parentId   String?
+
+  pool       SponsorPool @relation(fields: [poolId], references: [id])
+}
+// ============================================================================
+// LFBO Phase 8B (Rule Encoding Readiness) — RESTORED
+// Adds RuleSet + ModeRuleBinding to persist versioned mode rules as data.
+// Required by Phase 8B/8C/8D routes and engine readiness.
+// ============================================================================
+
+enum RuleSetStatus {
+  DRAFT
+  ACTIVE
+  RETIRED
+}
+
+model RuleSet {
+  id        String        @id @default(cuid())
+  key       String
+  version   Int
+  status    RuleSetStatus
+  rulesJson Json
+  createdAt DateTime      @default(now())
+
+  @@unique([key, version])
+}
+
+model ModeRuleBinding {
+  id             String   @id @default(cuid())
+  modeKey        String   @unique
+  ruleSetKey     String
+  ruleSetVersion Int
+  createdAt      DateTime @default(now())
 }

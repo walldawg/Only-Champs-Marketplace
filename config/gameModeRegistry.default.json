@@ -1,0 +1,14 @@
+{
+  "gameModeRegistryId": "GMREG_DEFAULT",
+  "gameModeRegistryVersion": 1,
+  "gameModes": [
+    {
+      "gameModeId": "GM_SCORED",
+      "gameModeVersion": 1,
+      "engineCompatVersion": 1,
+      "name": "Scored",
+      "description": "Default scored mode",
+      "formatGate": { "mode": "OPEN" }
+    }
+  ]
+}
