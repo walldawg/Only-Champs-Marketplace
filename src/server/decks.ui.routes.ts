@@ -195,6 +195,9 @@ app.get("/ui/matches", async (req, reply) => {
   const limit = Math.min(Math.max(rawLimit || 25, 1), 200);
   const offset = Math.max(rawOffset || 0, 0);
 
+  const matchIdQuery =
+    typeof q.matchId === "string" && q.matchId.trim().length > 0 ? q.matchId.trim() : null;
+
   
   // When deckId filter is present, we overfetch and filter in-memory because JSON filtering
   // is not guaranteed across SQLite/Prisma versions.
@@ -207,18 +210,27 @@ app.get("/ui/matches", async (req, reply) => {
     select: { matchId: true, createdAt: true, matchResultJson: true },
   });
 
-  const rows = (deckId
+  const rows = (deckId || matchIdQuery
     ? rowsRaw.filter((r) => {
         const mr: any = r.matchResultJson as any;
-        return String(mr?.deckId ?? "") === String(deckId);
+        const okDeck = deckId ? String(mr?.deckId ?? "") === String(deckId) : true;
+        const okMatch = matchIdQuery
+          ? String(r.matchId ?? "").toLowerCase().includes(String(matchIdQuery).toLowerCase())
+          : true;
+        return okDeck && okMatch;
       })
     : rowsRaw
-  ).slice(deckId ? offset : 0, deckId ? offset + limit : undefined);
+  ).slice((deckId || matchIdQuery) ? offset : 0, (deckId || matchIdQuery) ? offset + limit : undefined);
 
   const backHref = deckId ? `/ui/decks/${encodeURIComponent(deckId)}` : "/ui/decks";
   const headerNote = deckId
     ? `Showing stored matches tagged to this deck.`
     : `Showing latest stored matches.`;
+
+  const queryNote = matchIdQuery
+    ? ` matchId contains: "${matchIdQuery}".`
+    : ``;
+
 
   const bodyRows =
     rows.length === 0
@@ -266,7 +278,7 @@ app.get("/ui/matches", async (req, reply) => {
     <p><a href="${backHref}" style="text-decoration:none;">← Back</a></p>
 
     <h1>Latest Matches</h1>
-    <p class="meta">${headerNote}</p>
+    <p class="meta">${headerNote}${queryNote}</p>
 
     <div style="margin: 10px 0 14px 0; padding: 10px; border: 1px solid #e6e6e6; border-radius: 10px;">
       <form method="get" action="/ui/matches" style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; margin:0;">
@@ -276,13 +288,18 @@ app.get("/ui/matches", async (req, reply) => {
         </div>
 
         <div style="display:flex; flex-direction:column; gap:4px;">
-          <label class="muted" for="limit" style="font-size:12px;">limit</label>
+          <label class="muted" for="matchId" style="font-size:12px;">matchId contains (optional)</label>
+          <input id="matchId" name="matchId" value="${matchIdQuery ? esc(matchIdQuery) : ""}" placeholder="e.g. M_API_..." style="min-width:260px; padding:8px; border:1px solid #ddd; border-radius:8px;" />
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:4px;">
+          <label class="muted" for="limit style="font-size:12px;">limit</label>
           <input id="limit" name="limit" value="${limit}" inputmode="numeric" style="width:90px; padding:8px; border:1px solid #ddd; border-radius:8px;" />
         </div>
 
         <button class="linkBtn" type="submit">Apply</button>
 
-        ${deckId ? `<a class="linkBtn" href="/ui/matches?limit=${limit}&offset=0">Clear deck filter</a>` : ""}
+        ${deckId ? `<a class="linkBtn" href="/ui/matches?limit=${limit}&offset=0${matchIdQuery ? `&matchId=${encodeURIComponent(matchIdQuery)}` : ``}">Clear deck filter</a>` : ""}
       </form>
       <div class="muted" style="margin-top:8px; font-size:12px;">
         ${deckId ? `Filter active: <code>${esc(deckId)}</code>. Showing ${rows.length} match${rows.length===1?"":"es"} on this page.` : `No filter active. Showing ${rows.length} match${rows.length===1?"":"es"} on this page.`}
@@ -306,8 +323,8 @@ app.get("/ui/matches", async (req, reply) => {
     
     </table>
     <div style="margin-top:16px;">
-      ${offset > 0 ? `<a class="linkBtn" href="/ui/matches?limit=${limit}&offset=${Math.max(offset - limit, 0)}${deckId ? `&deckId=${encodeURIComponent(deckId)}` : ``}">← Prev</a>` : ""}
-      ${rows.length === limit ? `<a class="linkBtn" style="margin-left:8px;" href="/ui/matches?limit=${limit}&offset=${offset + limit}${deckId ? `&deckId=${encodeURIComponent(deckId)}` : ``}">Next →</a>` : ""}
+      ${offset > 0 ? `<a class="linkBtn" href="/ui/matches?limit=${limit}&offset=${Math.max(offset - limit, 0)}${deckId ? `&deckId=${encodeURIComponent(deckId)}` : ``}${matchIdQuery ? `&matchId=${encodeURIComponent(matchIdQuery)}` : ``}">← Prev</a>` : ""}
+      ${rows.length === limit ? `<a class="linkBtn" style="margin-left:8px;" href="/ui/matches?limit=${limit}&offset=${offset + limit}${deckId ? `&deckId=${encodeURIComponent(deckId)}` : ``}${matchIdQuery ? `&matchId=${encodeURIComponent(matchIdQuery)}` : ``}">Next →</a>` : ""}
     </div>
 
 
