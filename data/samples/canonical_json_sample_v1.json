@@ -1,0 +1,41 @@
+{
+  "setCode": "PHASE7_SAMPLE",
+  "concepts": [
+    {
+      "type": "HERO",
+      "slug": "phase7-sample-hero",
+      "name": "Phase7 Sample Hero",
+      "meta": {
+        "source": "phase7-sample"
+      },
+      "versions": [
+        {
+          "versionCode": "V1",
+          "finish": "NONFOIL",
+          "attributes": {
+            "power": 81
+          },
+          "requirements": {}
+        }
+      ]
+    },
+    {
+      "type": "PLAY",
+      "slug": "phase7-sample-play",
+      "name": "Phase7 Sample Play",
+      "meta": {
+        "source": "phase7-sample"
+      },
+      "versions": [
+        {
+          "versionCode": "V1",
+          "finish": "NONFOIL",
+          "attributes": {},
+          "requirements": {
+            "playCost": 1
+          }
+        }
+      ]
+    }
+  ]
+}
