@@ -1,0 +1,111 @@
+{
+  "artifact": {
+    "deterministicHash": {
+      "algo": "noncrypto-djb2:bundle:v1",
+      "value": "6ee63ab8"
+    },
+    "header": {
+      "artifactVersion": "MatchArtifactV1",
+      "completedAt": "<normalized-iso>",
+      "engineCode": "MOCK_ENGINE",
+      "engineVersion": "0.0.1",
+      "matchId": "MATCH_PHASE8_ROOKIE_BASELINE_001",
+      "modeCode": "ROOKIE",
+      "startedAt": "<normalized-iso>",
+      "universeCode": "UNIV_TEST"
+    },
+    "inputsDigest": {
+      "algo": "noncrypto-djb2:stable-json-sortedkeys:v1",
+      "value": "56999f97"
+    },
+    "participants": [
+      {
+        "extra": {
+          "name": "Player One"
+        },
+        "participantId": "P1",
+        "role": "PLAYER"
+      },
+      {
+        "extra": {
+          "name": "Player Two"
+        },
+        "participantId": "P2",
+        "role": "PLAYER"
+      }
+    ],
+    "platformMeta": {
+      "note": "Stub artifact for Phase 9 spine proof only.",
+      "producedBy": "InProcessMockEngineAdapterV1"
+    },
+    "replay": {
+      "payload": {
+        "deterministicHash": "6ee63ab8",
+        "inputsDigest": "56999f97",
+        "participants": [
+          "P1",
+          "P2"
+        ],
+        "seed": "seed-phase8-rookie-baseline-001"
+      },
+      "replayVersion": "mock-replay:v1"
+    },
+    "result": {
+      "outcomeFlags": [],
+      "placements": [
+        {
+          "participantId": "P2",
+          "placement": 1
+        },
+        {
+          "participantId": "P1",
+          "placement": 2
+        }
+      ],
+      "scoresByParticipantId": {
+        "P1": 0,
+        "P2": 1
+      },
+      "scoringSummary": {
+        "kind": "mock",
+        "scoresByParticipantId": {
+          "P1": 0,
+          "P2": 1
+        }
+      },
+      "winnerParticipantId": "P2"
+    },
+    "seed": "seed-phase8-rookie-baseline-001",
+    "timeline": [
+      {
+        "at": "<normalized-iso>",
+        "code": "MATCH_START",
+        "extra": {
+          "note": "mock adapter start"
+        },
+        "idx": 0,
+        "metrics": {}
+      },
+      {
+        "at": "<normalized-iso>",
+        "code": "MATCH_END",
+        "extra": {
+          "note": "mock adapter end"
+        },
+        "idx": 1,
+        "metrics": {
+          "winnerScore": 1
+        },
+        "participantId": "P2"
+      }
+    ]
+  },
+  "generatedFrom": {
+    "engineCode": "MOCK_ENGINE",
+    "engineVersion": "0.0.1",
+    "modeCode": "ROOKIE",
+    "universeCode": "UNIV_TEST"
+  },
+  "matchId": "MATCH_PHASE8_ROOKIE_BASELINE_001",
+  "snapshotVersion": "rookie_baseline_v1"
+}
